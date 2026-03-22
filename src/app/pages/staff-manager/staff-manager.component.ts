@@ -87,6 +87,11 @@ import { environment } from '../../../environments/environment';
                   <h3 class="font-bold text-primary">{{ member.full_name || member.email }}</h3>
                   <p class="truncate text-xs text-slate-400">{{ member.email }}</p>
                 </div>
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  [class]="statusClass(member)">
+                  <span class="h-2 w-2 rounded-full" [class]="statusDotClass(member)"></span>
+                  {{ statusLabel(member) }}
+                </span>
                 <span class="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">Manager</span>
                 <button class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500" (click)="remove(member.id)">
                   <lucide-angular [img]="trashIcon" class="h-4 w-4"></lucide-angular>
@@ -114,6 +119,11 @@ import { environment } from '../../../environments/environment';
                   <h3 class="font-bold text-primary">{{ member.full_name || member.email }}</h3>
                   <p class="truncate text-xs text-slate-400">{{ member.email }}</p>
                 </div>
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  [class]="statusClass(member)">
+                  <span class="h-2 w-2 rounded-full" [class]="statusDotClass(member)"></span>
+                  {{ statusLabel(member) }}
+                </span>
                 <span class="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent">Waiter</span>
                 <button class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500" (click)="remove(member.id)">
                   <lucide-angular [img]="trashIcon" class="h-4 w-4"></lucide-angular>
@@ -180,6 +190,29 @@ export class StaffManagerComponent {
       return member.full_name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
     }
     return member.email.slice(0, 2).toUpperCase();
+  }
+
+  statusLabel(member: Profile): string {
+    if (member.invite_token) return 'Pending';
+    if (this.isRecentlySeen(member) && member.is_online) return 'Online';
+    return 'Offline';
+  }
+
+  statusClass(member: Profile): string {
+    if (member.invite_token) return 'bg-amber-50 text-amber-700';
+    if (this.isRecentlySeen(member) && member.is_online) return 'bg-emerald-50 text-emerald-700';
+    return 'bg-slate-100 text-slate-500';
+  }
+
+  statusDotClass(member: Profile): string {
+    if (member.invite_token) return 'bg-amber-500';
+    if (this.isRecentlySeen(member) && member.is_online) return 'bg-emerald-500';
+    return 'bg-slate-400';
+  }
+
+  private isRecentlySeen(member: Profile): boolean {
+    if (!member.last_seen_at) return false;
+    return Date.now() - new Date(member.last_seen_at).getTime() < 5 * 60 * 1000;
   }
 
   async invite(): Promise<void> {

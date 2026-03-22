@@ -256,26 +256,36 @@ export class CreateOrderComponent {
   }
 
   async createOrder(): Promise<void> {
+    if (this.submitting()) return;
+
+    const table = this.metaForm.controls.tableNumber.value.trim();
+    if (!table || this.cart().length === 0) {
+      toast.error('Enter a table number and add at least one item');
+      return;
+    }
+
     this.submitting.set(true);
     try {
-      const token = crypto.randomUUID();
-      const table = this.metaForm.controls.tableNumber.value;
       const created = await this.orderService.createOrder({
         table_number: table,
         items: this.cart(),
         customer_name: this.metaForm.controls.customerName.value || undefined,
-        access_token: token
+        access_token: crypto.randomUUID()
       });
 
-      await this.notificationService.createNotification({
-        order_id: created.id,
-        table_number: created.table_number,
-        type: 'new_order',
-        message: `New order created for table ${created.table_number}`
-      });
+      try {
+        await this.notificationService.createNotification({
+          order_id: created.id,
+          table_number: created.table_number,
+          type: 'new_order',
+          message: `New order created for table ${created.table_number}`
+        });
+      } catch (notificationError) {
+        console.warn('Notification creation failed after order creation', notificationError);
+      }
 
       this.createdOrderId.set(created.id);
-      this.createdToken.set(token);
+      this.createdToken.set(created.access_token);
       this.step.set('done');
       toast.success('Order created');
     } catch (e: any) {

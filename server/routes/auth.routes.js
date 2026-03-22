@@ -33,7 +33,7 @@ router.post('/register', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
 
     await pool.query(
-      'INSERT INTO profiles (id, full_name, email, password_hash, role, store_id, store_name, industry) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO profiles (id, full_name, email, password_hash, role, store_id, store_name, industry, is_online, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE, CURRENT_TIMESTAMP)',
       [id, fullName || null, email, hash, 'admin', storeId, storeName || null, industry || 'restaurant']
     );
 
@@ -65,10 +65,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    await pool.query('UPDATE profiles SET is_online = TRUE, last_seen_at = CURRENT_TIMESTAMP WHERE id = ?', [user.id]);
+
     const token = signToken(user);
     res.json({
       token,
-      user: { id: user.id, email: user.email, role: user.role, store_id: user.store_id, full_name: user.full_name, store_name: user.store_name, industry: user.industry, subscription_tier: user.subscription_tier }
+      user: { id: user.id, email: user.email, role: user.role, store_id: user.store_id, full_name: user.full_name, store_name: user.store_name, industry: user.industry, subscription_tier: user.subscription_tier, is_online: true, last_seen_at: new Date().toISOString() }
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -94,12 +96,12 @@ router.post('/accept-invite', async (req, res) => {
 
     const user = rows[0];
     const hash = await bcrypt.hash(password, 10);
-    await pool.query('UPDATE profiles SET password_hash = ?, invite_token = NULL WHERE id = ?', [hash, user.id]);
+    await pool.query('UPDATE profiles SET password_hash = ?, invite_token = NULL, is_online = TRUE, last_seen_at = CURRENT_TIMESTAMP WHERE id = ?', [hash, user.id]);
 
     const jwtToken = signToken(user);
     res.json({
       token: jwtToken,
-      user: { id: user.id, email: user.email, role: user.role, store_id: user.store_id, full_name: user.full_name, store_name: user.store_name, industry: user.industry, subscription_tier: user.subscription_tier }
+      user: { id: user.id, email: user.email, role: user.role, store_id: user.store_id, full_name: user.full_name, store_name: user.store_name, industry: user.industry, subscription_tier: user.subscription_tier, is_online: true, last_seen_at: new Date().toISOString() }
     });
   } catch (err) {
     console.error('Accept invite error:', err);
@@ -111,7 +113,7 @@ router.post('/accept-invite', async (req, res) => {
 router.get('/me', auth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, full_name, email, role, store_id, store_name, industry, subscription_tier FROM profiles WHERE id = ?',
+      'SELECT id, full_name, email, role, store_id, store_name, industry, subscription_tier, invite_token, is_online, last_seen_at FROM profiles WHERE id = ?',
       [req.user.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Profile not found' });
@@ -138,13 +140,24 @@ router.patch('/profile', auth, async (req, res) => {
     values.push(req.user.id);
     await pool.query(`UPDATE profiles SET ${fields.join(', ')} WHERE id = ?`, values);
     const [rows] = await pool.query(
-      'SELECT id, full_name, email, role, store_id, store_name, industry, subscription_tier FROM profiles WHERE id = ?',
+      'SELECT id, full_name, email, role, store_id, store_name, industry, subscription_tier, invite_token, is_online, last_seen_at FROM profiles WHERE id = ?',
       [req.user.id]
     );
     res.json(rows[0]);
   } catch (err) {
     console.error('Update profile error:', err);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// POST /api/auth/logout — mark current user offline
+router.post('/logout', auth, async (req, res) => {
+  try {
+    await pool.query('UPDATE profiles SET is_online = FALSE WHERE id = ?', [req.user.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Logout error:', err);
+    res.status(500).json({ error: 'Failed to log out' });
   }
 });
 

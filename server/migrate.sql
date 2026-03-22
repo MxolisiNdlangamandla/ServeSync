@@ -9,6 +9,8 @@ USE servesync;
 -- ── profiles ──────────────────────────────────────────────────────────
 ALTER TABLE profiles ADD COLUMN store_id VARCHAR(36) AFTER role;
 ALTER TABLE profiles ADD COLUMN invite_token VARCHAR(36) AFTER store_name;
+ALTER TABLE profiles ADD COLUMN is_online BOOLEAN NOT NULL DEFAULT FALSE AFTER invite_token;
+ALTER TABLE profiles ADD COLUMN last_seen_at TIMESTAMP NULL DEFAULT NULL AFTER is_online;
 CREATE INDEX idx_profiles_store_id ON profiles (store_id);
 
 -- Backfill: give every existing admin a unique store_id

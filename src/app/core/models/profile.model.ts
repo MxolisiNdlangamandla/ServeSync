@@ -9,5 +9,8 @@ export interface Profile {
   store_id: string | null;
   store_name: string | null;
   industry: string | null;
+  invite_token?: string | null;
+  is_online?: boolean;
+  last_seen_at?: string | null;
   subscription_tier: SubscriptionTier;
 }

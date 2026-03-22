@@ -81,6 +81,11 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
+    try {
+      await firstValueFrom(this.http.post(`${this.api}/auth/logout`, {}));
+    } catch {
+      // Ignore logout sync failures and clear local session anyway.
+    }
     localStorage.removeItem('servesync-token');
     this.profileState.set(null);
     this.loggedIn.set(false);

@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   store_id    VARCHAR(36),
   store_name  VARCHAR(255),
   invite_token VARCHAR(36),
+  is_online   BOOLEAN      NOT NULL DEFAULT FALSE,
+  last_seen_at TIMESTAMP NULL DEFAULT NULL,
   industry    VARCHAR(50)  DEFAULT 'restaurant',
   subscription_tier ENUM('tier1','tier2','tier3') NOT NULL DEFAULT 'tier1',
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

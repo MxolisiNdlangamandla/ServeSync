@@ -16,6 +16,8 @@ async function auth(req, res, next) {
       if (rows.length) req.user.store_id = rows[0].store_id;
     }
 
+    await pool.query('UPDATE profiles SET is_online = TRUE, last_seen_at = CURRENT_TIMESTAMP WHERE id = ?', [decoded.id]);
+
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });

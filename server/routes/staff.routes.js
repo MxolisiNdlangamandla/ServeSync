@@ -12,7 +12,7 @@ router.get('/', auth, async (req, res) => {
     const storeId = req.user.store_id;
     if (!storeId) return res.status(403).json({ error: 'No store associated' });
     const [rows] = await pool.query(
-      'SELECT id, full_name, email, role FROM profiles WHERE store_id = ? ORDER BY role, full_name',
+      'SELECT id, full_name, email, role, invite_token, is_online, last_seen_at FROM profiles WHERE store_id = ? ORDER BY role, full_name',
       [storeId]
     );
     res.json(rows);
@@ -34,7 +34,7 @@ router.post('/invite', auth, async (req, res) => {
     const [existing] = await pool.query('SELECT id FROM profiles WHERE email = ?', [email]);
     if (existing.length) {
       // Update role + store if already exists
-      await pool.query('UPDATE profiles SET role = ?, store_id = ?, full_name = COALESCE(?, full_name) WHERE email = ?', [role || 'user', storeId, full_name || null, email]);
+      await pool.query('UPDATE profiles SET role = ?, store_id = ?, full_name = COALESCE(?, full_name), invite_token = COALESCE(invite_token, UUID()), is_online = FALSE WHERE email = ?', [role || 'user', storeId, full_name || null, email]);
       return res.json({ success: true, message: 'Role updated' });
     }
 
@@ -43,7 +43,7 @@ router.post('/invite', auth, async (req, res) => {
     // Temporary password — staff accepts invite to set real password
     const tempHash = await bcrypt.hash(uuidv4(), 10);
     await pool.query(
-      'INSERT INTO profiles (id, email, password_hash, role, store_id, invite_token, full_name) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO profiles (id, email, password_hash, role, store_id, invite_token, full_name, is_online) VALUES (?, ?, ?, ?, ?, ?, ?, FALSE)',
       [id, email, tempHash, role || 'user', storeId, inviteToken, full_name || null]
     );
     res.status(201).json({ success: true, message: 'Staff member invited', inviteToken });

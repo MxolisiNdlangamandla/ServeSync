@@ -8,6 +8,11 @@ import { MenuService } from '../../core/services/menu.service';
 import { formatCurrency } from '../../core/utils/formatters';
 import { environment } from '../../../environments/environment';
 
+interface CategoryRecord {
+  id: string;
+  name: string;
+}
+
 @Component({
   selector: 'app-menu-manager',
   imports: [ReactiveFormsModule, LucideAngularModule],
@@ -106,6 +111,14 @@ import { environment } from '../../../environments/environment';
       }
 
       <!-- Menu Items grouped by category -->
+      @if (!items().length) {
+        <section class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-2xl">🍽️</div>
+          <h2 class="text-lg font-bold text-primary">No menu items yet</h2>
+          <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Your menu is still empty. Add your first item to start building the menu your team will use when creating orders.</p>
+        </section>
+      }
+
       @for (group of grouped(); track group.category) {
         <section>
           <h2 class="mb-3 text-xs font-bold uppercase tracking-wide text-accent">{{ group.category }}</h2>
@@ -182,9 +195,10 @@ export class MenuManagerComponent {
       this.items.set(rows);
       // Derive categories from existing items + stored categories
       const fromItems = [...new Set(rows.map((r) => r.category))];
-      this.http.get<string[]>(`${this.api}/categories`).subscribe({
+      this.http.get<CategoryRecord[]>(`${this.api}/categories`).subscribe({
         next: (stored) => {
-          const merged = [...new Set([...stored, ...fromItems])].sort();
+          const storedNames = stored.map((category) => category.name);
+          const merged = [...new Set([...storedNames, ...fromItems])].sort();
           this.categories.set(merged);
         },
         error: () => this.categories.set(fromItems.sort())
