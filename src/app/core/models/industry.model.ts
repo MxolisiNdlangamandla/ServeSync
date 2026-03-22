@@ -22,10 +22,10 @@ export interface IndustryLabels {
 
 export const INDUSTRY_OPTIONS: IndustryOption[] = [
   { id: 'restaurant', name: 'Restaurant', icon: '🍽️', enabled: true },
-  { id: 'barbershop', name: 'Barbershop', icon: '💈', enabled: false },
-  { id: 'salon', name: 'Hair Salon', icon: '💇', enabled: false },
-  { id: 'carwash', name: 'Car Wash', icon: '🚗', enabled: false },
-  { id: 'lounge', name: 'Lounge / Hospitality', icon: '🍸', enabled: false },
+  //{ id: 'barbershop', name: 'Barbershop', icon: '💈', enabled: false },
+  //{ id: 'salon', name: 'Hair Salon', icon: '💇', enabled: false },
+  //{ id: 'carwash', name: 'Car Wash', icon: '🚗', enabled: false },
+  //{ id: 'lounge', name: 'Lounge / Hospitality', icon: '🍸', enabled: false },
 ];
 
 export const INDUSTRY_LABELS: Record<IndustryType, IndustryLabels> = {

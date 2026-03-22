@@ -63,25 +63,8 @@ import { RouterLink } from '@angular/router';
         </div>
       </section>
 
-      <!-- Industries -->
-      <section class="mx-auto max-w-7xl px-4 pb-20">
-        <h3 class="mb-6 text-center text-2xl font-black text-primary">Built for service businesses</h3>
-        <p class="mb-8 text-center text-slate-500">Restaurants, barbershops, salons, car washes, lounges and more.</p>
-        <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          @for (ind of industries; track ind.name) {
-            <div class="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center">
-              <div class="mb-2 text-3xl">{{ ind.icon }}</div>
-              <div class="text-sm font-semibold text-slate-800">{{ ind.name }}</div>
-              @if (!ind.enabled) {
-                <span class="mt-1 inline-block rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase text-slate-500">Coming Soon</span>
-              }
-            </div>
-          }
-        </div>
-        <div class="mt-8 text-center">
-          <a routerLink="/register" class="inline-block rounded-lg bg-accent px-6 py-3 font-bold text-white hover:bg-orange-600">Get Started Free</a>
-        </div>
-      </section>
+      <!-- Industries section intentionally hidden for launch.
+           Keep the shortlist in the component for future vertical expansion. -->
 
       <!-- Pricing -->
       <section id="pricing" class="mx-auto max-w-7xl px-4 pb-20">
@@ -152,16 +135,23 @@ export class LandingComponent {
 
   readonly industries = [
     { name: 'Restaurant', icon: '🍽️', enabled: true },
-    { name: 'Barbershop', icon: '💈', enabled: false },
-    { name: 'Hair Salon', icon: '💇', enabled: false },
-    { name: 'Car Wash', icon: '🚗', enabled: false },
-    { name: 'Lounge', icon: '🍸', enabled: false },
+    // Strongest next verticals for ServeSync:
+    // { name: 'Barbershop', icon: '💈', enabled: false },
+    // { name: 'Hair Salon', icon: '💇', enabled: false },
+    // { name: 'Car Wash', icon: '🚗', enabled: false },
+    // { name: 'Lounge / VIP', icon: '🍸', enabled: false },
+    // Good later expansions:
+    // { name: 'Hotel Room Service', icon: '🏨', enabled: false },
+    // { name: 'Clinic Waiting Room', icon: '🏥', enabled: false },
+    // { name: 'Gaming Lounge / Internet Cafe', icon: '🎮', enabled: false },
+    // { name: 'Repair Service Centre', icon: '🛠️', enabled: false },
+    // { name: 'Food Court / Fast Casual', icon: '🍽️', enabled: false },
   ];
 
   readonly plans = [
     {
       name: 'Starter',
-      price: 'Free',
+      price: 0,
       unit: '',
       popular: false,
       cta: 'Get Started Free',
