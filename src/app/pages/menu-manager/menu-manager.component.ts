@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { toast } from 'ngx-sonner';
 import { LucideAngularModule, Plus, Pencil, Trash2, X } from 'lucide-angular';
 import { MenuItem } from '../../core/models/menu-item.model';
+import { AuthService } from '../../core/services/auth.service';
 import { MenuService } from '../../core/services/menu.service';
 import { formatCurrency } from '../../core/utils/formatters';
 import { environment } from '../../../environments/environment';
@@ -15,7 +17,7 @@ interface CategoryRecord {
 
 @Component({
   selector: 'app-menu-manager',
-  imports: [ReactiveFormsModule, LucideAngularModule],
+  imports: [ReactiveFormsModule, LucideAngularModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-5">
@@ -24,11 +26,28 @@ interface CategoryRecord {
           <h1 class="text-3xl font-black text-primary">Menu</h1>
           <p class="text-sm text-slate-500">{{ items().length }} items</p>
         </div>
-        <button class="inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-orange-600" (click)="adding.set(true)">
+        <button class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold text-white"
+          [class]="menuLocked() ? 'cursor-not-allowed bg-slate-300' : 'bg-accent hover:bg-orange-600'"
+          [disabled]="menuLocked()"
+          (click)="adding.set(true)">
           <lucide-angular [img]="plusIcon" class="h-4 w-4"></lucide-angular>
           Add Item
         </button>
       </header>
+
+      @if (menuLocked()) {
+        <section class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-amber-900">Menu management is not available on your current plan</h2>
+              <p class="mt-1 text-sm text-amber-800">You are on the Starter plan. Upgrade to Professional or Enterprise to add saved menu items. You can still create orders using manual custom items.</p>
+            </div>
+            <a routerLink="/settings" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90">
+              Upgrade Plan
+            </a>
+          </div>
+        </section>
+      }
 
       <!-- Add Modal -->
       @if (adding()) {
@@ -111,7 +130,7 @@ interface CategoryRecord {
       }
 
       <!-- Menu Items grouped by category -->
-      @if (!items().length) {
+      @if (!items().length && !menuLocked()) {
         <section class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
           <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-2xl">🍽️</div>
           <h2 class="text-lg font-bold text-primary">No menu items yet</h2>
@@ -152,6 +171,7 @@ export class MenuManagerComponent {
   private readonly menuService = inject(MenuService);
   private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
   private readonly api = environment.apiUrl;
 
   readonly plusIcon = Plus;
@@ -185,6 +205,7 @@ export class MenuManagerComponent {
     });
     return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
   });
+  readonly menuLocked = computed(() => this.auth.profile()?.subscription_tier === 'tier1');
 
   constructor() {
     this.load();
@@ -211,20 +232,35 @@ export class MenuManagerComponent {
   }
 
   create(): void {
+    if (this.menuLocked()) {
+      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      return;
+    }
+
     this.menuService.createMenuItem(this.addForm.getRawValue()).then(() => {
       toast.success('Menu item added');
       this.addForm.reset({ name: '', price: 0, category: '', description: '' });
       this.adding.set(false);
       this.load();
-    });
+    }).catch((err: any) => toast.error(err.error?.error ?? 'Failed to add menu item'));
   }
 
   toggle(item: MenuItem, event: Event): void {
+    if (this.menuLocked()) {
+      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      return;
+    }
+
     const checked = (event.target as HTMLInputElement).checked;
-    this.menuService.updateMenuItem(item.id, { available: checked }).then(() => this.load());
+    this.menuService.updateMenuItem(item.id, { available: checked }).then(() => this.load()).catch((err: any) => toast.error(err.error?.error ?? 'Failed to update menu item'));
   }
 
   edit(item: MenuItem): void {
+    if (this.menuLocked()) {
+      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      return;
+    }
+
     this.editingId.set(item.id);
     this.editForm.reset({
       name: item.name,
@@ -236,17 +272,27 @@ export class MenuManagerComponent {
 
   saveEdit(): void {
     if (!this.editingId()) return;
+    if (this.menuLocked()) {
+      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      return;
+    }
+
     this.menuService.updateMenuItem(this.editingId(), this.editForm.getRawValue()).then(() => {
       toast.success('Item updated');
       this.editingId.set('');
       this.load();
-    });
+    }).catch((err: any) => toast.error(err.error?.error ?? 'Failed to update menu item'));
   }
 
   remove(id: string): void {
+    if (this.menuLocked()) {
+      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      return;
+    }
+
     this.menuService.deleteMenuItem(id).then(() => {
       toast.success('Item deleted');
       this.load();
-    });
+    }).catch((err: any) => toast.error(err.error?.error ?? 'Failed to delete menu item'));
   }
 }

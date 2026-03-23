@@ -5,6 +5,11 @@ const auth = require('../middleware/auth');
 
 const router = Router();
 
+async function getSubscriptionTier(userId) {
+  const [rows] = await pool.query('SELECT subscription_tier FROM profiles WHERE id = ?', [userId]);
+  return rows.length ? rows[0].subscription_tier : null;
+}
+
 // GET /api/menu  (public — scoped by store_id query param or JWT)
 router.get('/', async (req, res) => {
   try {
@@ -51,6 +56,10 @@ router.post('/', auth, async (req, res) => {
     }
     const storeId = req.user.store_id;
     if (!storeId) return res.status(403).json({ error: 'No store associated with this account' });
+    const tier = await getSubscriptionTier(req.user.id);
+    if (tier === 'tier1') {
+      return res.status(403).json({ error: 'Menu management is available on Professional and Enterprise plans' });
+    }
 
     const id = uuidv4();
     await pool.query(
@@ -68,6 +77,11 @@ router.post('/', auth, async (req, res) => {
 // PATCH /api/menu/:id
 router.patch('/:id', auth, async (req, res) => {
   try {
+    const tier = await getSubscriptionTier(req.user.id);
+    if (tier === 'tier1') {
+      return res.status(403).json({ error: 'Menu management is available on Professional and Enterprise plans' });
+    }
+
     const fields = [];
     const values = [];
     const allowed = ['name', 'price', 'category', 'description', 'available'];
@@ -91,6 +105,11 @@ router.patch('/:id', auth, async (req, res) => {
 // DELETE /api/menu/:id
 router.delete('/:id', auth, async (req, res) => {
   try {
+    const tier = await getSubscriptionTier(req.user.id);
+    if (tier === 'tier1') {
+      return res.status(403).json({ error: 'Menu management is available on Professional and Enterprise plans' });
+    }
+
     const storeId = req.user.store_id;
     await pool.query('DELETE FROM menu_items WHERE id = ? AND store_id = ?', [req.params.id, storeId]);
     res.json({ success: true });

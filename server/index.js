@@ -2,6 +2,7 @@ require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require('express');
 const cors = require('cors');
+const pool = require('./db');
 
 const authRoutes = require('./routes/auth.routes');
 const ordersRoutes = require('./routes/orders.routes');
@@ -12,6 +13,15 @@ const categoriesRoutes = require('./routes/categories.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+async function ensureOrderColumns() {
+  await pool.query(`
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP NULL DEFAULT NULL AFTER status,
+      ADD COLUMN IF NOT EXISTS review_rating TINYINT NULL AFTER payment_status,
+      ADD COLUMN IF NOT EXISTS review_comment TEXT NULL AFTER review_rating
+  `);
+}
 
 app.use(cors());
 app.use(express.json());
@@ -27,6 +37,13 @@ app.use('/api/categories', categoriesRoutes);
 // Health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
-app.listen(PORT, () => {
-  console.log(`ServeSync API running on http://localhost:${PORT}`);
-});
+ensureOrderColumns()
+  .catch((error) => {
+    console.error('Schema sync error:', error);
+    process.exit(1);
+  })
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`ServeSync API running on http://localhost:${PORT}`);
+    });
+  });

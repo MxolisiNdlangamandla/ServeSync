@@ -68,8 +68,9 @@ export class NotificationBellComponent implements OnDestroy {
 
   markAllRead(): void {
     this.service.markAllAsRead().then(() => {
+      this.notifications.update((rows) => rows.map((row) => ({ ...row, read: true })));
+      this.open.set(false);
       toast.success('All notifications marked as read');
-      this.load();
     });
   }
 

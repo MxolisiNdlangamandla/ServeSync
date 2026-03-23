@@ -117,14 +117,36 @@ router.patch('/:id', async (req, res) => {
     }
 
     // Customer can only update certain fields
-    const staffAllowed = ['status', 'call_staff', 'request_bill', 'payment_status', 'items', 'notes', 'customer_name'];
-    const customerAllowed = ['call_staff', 'request_bill', 'items', 'payment_status'];
+    const staffAllowed = ['status', 'call_staff', 'request_bill', 'payment_status', 'items', 'notes', 'customer_name', 'review_rating', 'review_comment'];
+    const customerAllowed = ['call_staff', 'request_bill', 'items', 'payment_status', 'review_rating', 'review_comment'];
     const allowed = isStaff ? staffAllowed : customerAllowed;
 
     const fields = [];
     const values = [];
+
+    if (!isStaff && (req.body.review_rating !== undefined || req.body.review_comment !== undefined) && order.status !== 'completed') {
+      return res.status(400).json({ error: 'Reviews can only be submitted after an order is completed' });
+    }
+
+    if (req.body.review_rating !== undefined) {
+      const rating = Number(req.body.review_rating);
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        return res.status(400).json({ error: 'Review rating must be between 1 and 5' });
+      }
+    }
+
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
+        if (key === 'status' && req.body[key] === 'completed') {
+          fields.push('completed_at = CURRENT_TIMESTAMP');
+          fields.push('call_staff = FALSE');
+          fields.push('request_bill = FALSE');
+        }
+
+        if (key === 'status' && req.body[key] !== 'completed') {
+          fields.push('completed_at = NULL');
+        }
+
         fields.push(`${key} = ?`);
         values.push(key === 'items' ? JSON.stringify(req.body[key]) : req.body[key]);
       }

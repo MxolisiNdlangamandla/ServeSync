@@ -10,6 +10,7 @@ import { MenuService } from '../../core/services/menu.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OrderService } from '../../core/services/order.service';
 import { IndustryService } from '../../core/services/industry.service';
+import { AuthService } from '../../core/services/auth.service';
 import { formatCurrency } from '../../core/utils/formatters';
 
 type Step = 'build' | 'done';
@@ -41,7 +42,7 @@ type Step = 'build' | 'done';
           <form class="grid grid-cols-2 gap-3" [formGroup]="metaForm">
             <div>
               <label class="mb-1 block text-sm font-semibold text-slate-700">{{ labels().table }} Number <span class="text-red-500">*</span></label>
-              <input class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none" formControlName="tableNumber" placeholder="e.g. 5, A3, Bar" />
+              <input class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none" formControlName="tableNumber" placeholder="e.g. 5, A3, Bar" (input)="onTableNumberInput($event)" />
             </div>
             <div>
               <label class="mb-1 block text-sm font-semibold text-slate-700">{{ labels().customer }} Name <span class="text-xs text-slate-400">(optional)</span></label>
@@ -53,31 +54,38 @@ type Step = 'build' | 'done';
         <!-- Menu Items -->
         <div class="rounded-xl border border-slate-200 bg-white p-5">
           <h2 class="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Menu Items</h2>
-          <div class="relative mb-4">
-            <lucide-angular [img]="icons.search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></lucide-angular>
-            <input class="w-full rounded-lg border border-slate-200 py-2.5 pl-10 pr-3 text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none" placeholder="Search menu..." [value]="search()" (input)="search.set(inputValue($event))" />
-          </div>
-          @for (group of groupedMenu(); track group.category) {
-            <div class="mb-4">
-              <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">{{ group.category }}</h3>
-              <div class="space-y-2">
-                @for (item of group.items; track item.id) {
-                  <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                    <div class="min-w-0 flex-1">
-                      <p class="font-semibold text-primary">{{ item.name }}</p>
-                      <p class="truncate text-xs text-slate-400">{{ item.description }}</p>
-                      <p class="mt-0.5 text-sm font-bold text-primary">{{ money(item.price) }}</p>
-                    </div>
-                    <button class="ml-3 flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50" (click)="addMenuItem(item)">
-                      <lucide-angular [img]="icons.plus" class="h-3.5 w-3.5"></lucide-angular> Add
-                    </button>
-                  </div>
-                }
-              </div>
+          @if (menuLocked()) {
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+              <p class="font-semibold">Saved menu items are not available on the Starter plan.</p>
+              <p class="mt-1 text-amber-800">You can still place the order by adding custom items manually below. Upgrade your plan to unlock menu management.</p>
             </div>
-          }
-          @if (groupedMenu().length === 0) {
-            <p class="py-6 text-center text-sm text-slate-400">No menu items found. Add custom items below.</p>
+          } @else {
+            <div class="relative mb-4">
+              <lucide-angular [img]="icons.search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></lucide-angular>
+              <input class="w-full rounded-lg border border-slate-200 py-2.5 pl-10 pr-3 text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none" placeholder="Search menu..." [value]="search()" (input)="search.set(inputValue($event))" />
+            </div>
+            @for (group of groupedMenu(); track group.category) {
+              <div class="mb-4">
+                <h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">{{ group.category }}</h3>
+                <div class="space-y-2">
+                  @for (item of group.items; track item.id) {
+                    <div class="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                      <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-primary">{{ item.name }}</p>
+                        <p class="truncate text-xs text-slate-400">{{ item.description }}</p>
+                        <p class="mt-0.5 text-sm font-bold text-primary">{{ money(item.price) }}</p>
+                      </div>
+                      <button type="button" class="ml-3 flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50" (click)="addMenuItem(item)">
+                        <lucide-angular [img]="icons.plus" class="h-3.5 w-3.5"></lucide-angular> Add
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+            @if (groupedMenu().length === 0) {
+              <p class="py-6 text-center text-sm text-slate-400">No saved menu items found. Add custom items below, or create menu items from the Menu page.</p>
+            }
           }
         </div>
 
@@ -95,7 +103,7 @@ type Step = 'build' | 'done';
             <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder:text-slate-400" placeholder="Item name" [value]="customName()" (input)="customName.set(inputValue($event))" />
             <input class="rounded-lg border border-slate-300 px-3 py-2 text-center text-sm placeholder:text-slate-400" placeholder="1" type="number" min="1" [value]="customQty()" (input)="customQty.set(intValue($event))" />
             <input class="rounded-lg border border-slate-300 px-3 py-2 text-sm placeholder:text-slate-400" placeholder="0.00" type="number" step="0.01" [value]="customPrice()" (input)="customPrice.set(numberValue($event))" />
-            <button class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50" (click)="addCustomItem()">
+            <button type="button" class="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50" (click)="addCustomItem()">
               <lucide-angular [img]="icons.plus" class="h-3.5 w-3.5"></lucide-angular> Add
             </button>
           </div>
@@ -114,15 +122,15 @@ type Step = 'build' | 'done';
                   <span class="flex-1 font-medium text-slate-700">{{ i.name }}</span>
                   <div class="flex items-center gap-2">
                     <span class="text-xs text-slate-400">{{ money(i.price) }} ea</span>
-                    <button class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-xs hover:bg-slate-50" (click)="changeQty(i.name, -1)">
+                    <button type="button" class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-xs hover:bg-slate-50" (click)="changeQty(i.name, -1)">
                       <lucide-angular [img]="icons.minus" class="h-3 w-3"></lucide-angular>
                     </button>
                     <span class="w-6 text-center font-semibold">{{ i.quantity }}</span>
-                    <button class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-xs hover:bg-slate-50" (click)="changeQty(i.name, 1)">
+                    <button type="button" class="flex h-6 w-6 items-center justify-center rounded border border-slate-200 text-xs hover:bg-slate-50" (click)="changeQty(i.name, 1)">
                       <lucide-angular [img]="icons.plus" class="h-3 w-3"></lucide-angular>
                     </button>
                     <span class="w-20 text-right font-bold text-primary">{{ money(i.price * i.quantity) }}</span>
-                    <button class="text-red-400 hover:text-red-600" (click)="remove(i.name)">
+                    <button type="button" class="text-red-400 hover:text-red-600" (click)="remove(i.name)">
                       <lucide-angular [img]="icons.trash" class="h-3.5 w-3.5"></lucide-angular>
                     </button>
                   </div>
@@ -136,7 +144,7 @@ type Step = 'build' | 'done';
           </div>
         }
 
-        <button class="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3.5 font-bold text-white hover:bg-orange-600 disabled:opacity-50" [disabled]="!canSubmit() || submitting()" (click)="createOrder()">
+        <button class="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3.5 font-bold text-white hover:bg-orange-600 disabled:opacity-50" [disabled]="isCreateDisabled()" (click)="createOrder()">
           <lucide-angular [img]="icons.qr" class="h-5 w-5"></lucide-angular>
           {{ submitting() ? 'Creating...' : 'Create ' + labels().order }}
         </button>
@@ -152,7 +160,7 @@ type Step = 'build' | 'done';
           </div>
           <p class="break-all text-xs text-slate-400">{{ customerLink() }}</p>
           <div class="mt-5 flex flex-wrap justify-center gap-2">
-            <button class="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white" (click)="copyLink()">Copy Link</button>
+            <button type="button" class="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white" (click)="copyLink()">Copy Link</button>
             <a class="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white" [href]="whatsAppLink()" target="_blank" rel="noreferrer">Share WhatsApp</a>
             <a [routerLink]="['/orders', createdOrderId()]" class="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold">Open Detail</a>
           </div>
@@ -167,6 +175,7 @@ export class CreateOrderComponent {
   private readonly menuService = inject(MenuService);
   private readonly notificationService = inject(NotificationService);
   private readonly industryService = inject(IndustryService);
+  private readonly auth = inject(AuthService);
   readonly labels = this.industryService.labels;
 
   readonly icons = {
@@ -177,6 +186,7 @@ export class CreateOrderComponent {
   readonly menu = signal<MenuItem[]>([]);
   readonly cart = signal<OrderItem[]>([]);
   readonly search = signal('');
+  readonly tableNumber = signal('');
   readonly customName = signal('');
   readonly customQty = signal(1);
   readonly customPrice = signal(0);
@@ -200,12 +210,16 @@ export class CreateOrderComponent {
     });
     return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
   });
+  readonly menuLocked = computed(() => this.auth.profile()?.subscription_tier === 'tier1');
 
   readonly total = computed(() => this.cart().reduce((sum, item) => sum + item.price * item.quantity, 0));
-  readonly canSubmit = computed(() => this.metaForm.controls.tableNumber.valid && this.cart().length > 0);
 
   constructor() {
     this.menuService.getMenuItems().subscribe((rows) => this.menu.set(rows));
+  }
+
+  onTableNumberInput(event: Event): void {
+    this.tableNumber.set(this.inputValue(event));
   }
 
   inputValue(event: Event): string {
@@ -230,11 +244,20 @@ export class CreateOrderComponent {
 
   addCustomItem(): void {
     const name = this.customName().trim();
-    if (!name || this.customPrice() <= 0) return;
+    if (!name) {
+      toast.error('Enter an item name');
+      return;
+    }
+    if (this.customPrice() <= 0) {
+      toast.error('Enter a valid price for the custom item');
+      return;
+    }
+
     this.upsertCart({ name, price: this.customPrice(), quantity: this.customQty() });
     this.customName.set('');
     this.customQty.set(1);
     this.customPrice.set(0);
+    toast.success('Custom item added');
   }
 
   upsertCart(incoming: OrderItem): void {
@@ -255,6 +278,18 @@ export class CreateOrderComponent {
     this.cart.update((items) => items.filter((i) => i.name !== name));
   }
 
+  isCreateDisabled(): boolean {
+    return this.submitting() || this.tableNumber().trim().length === 0 || this.cart().length === 0;
+  }
+
+  private createAccessToken(): string {
+    if (globalThis.crypto?.randomUUID) {
+      return globalThis.crypto.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  }
+
   async createOrder(): Promise<void> {
     if (this.submitting()) return;
 
@@ -270,7 +305,7 @@ export class CreateOrderComponent {
         table_number: table,
         items: this.cart(),
         customer_name: this.metaForm.controls.customerName.value || undefined,
-        access_token: crypto.randomUUID()
+        access_token: this.createAccessToken()
       });
 
       try {

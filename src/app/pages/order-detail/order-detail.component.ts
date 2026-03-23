@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { LucideAngularModule, ArrowLeft, Pencil, Bell, Receipt, Check, X, QrCode, Trash2 } from 'lucide-angular';
+import { LucideAngularModule, ArrowLeft, Pencil, Bell, Receipt, Check, X, QrCode, Trash2, Plus } from 'lucide-angular';
 import { QrCodeComponent } from 'ng-qrcode';
 import { toast } from 'ngx-sonner';
 import { OrderService } from '../../core/services/order.service';
@@ -32,7 +32,7 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <app-status-badge [createdAt]="order()!.created_at"></app-status-badge>
             </div>
           </div>
-          <span class="rounded-full px-3 py-1 text-xs font-bold uppercase" [class]="statusBadge()">{{ order()!.status }}</span>
+          <span class="rounded-full px-3 py-1 text-xs font-bold uppercase" [class]="statusBadge()">{{ statusLabel() }}</span>
         </header>
 
         <!-- Alerts -->
@@ -91,9 +91,15 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
                 }
               </div>
             </form>
+            <div class="px-4 pt-3">
+              <button type="button" class="inline-flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100" (click)="addItem()">
+                <lucide-angular [img]="plusIcon" class="h-4 w-4"></lucide-angular>
+                Add Item
+              </button>
+            </div>
             <div class="flex justify-end gap-2 px-4 py-3">
-              <button class="rounded-full border border-slate-300 px-4 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100" (click)="editing.set(false)">Cancel</button>
-              <button class="rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white hover:bg-orange-600" (click)="saveItems()">Save</button>
+              <button type="button" class="rounded-full border border-slate-300 px-4 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100" (click)="editing.set(false)">Cancel</button>
+              <button type="button" class="rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-white hover:bg-orange-600" (click)="saveItems()">Save</button>
             </div>
           }
 
@@ -149,6 +155,7 @@ export class OrderDetailComponent {
   readonly xIcon = X;
   readonly qrIcon = QrCode;
   readonly trashIcon = Trash2;
+  readonly plusIcon = Plus;
 
   readonly order = signal<Order | null>(null);
   readonly editing = signal(false);
@@ -161,6 +168,14 @@ export class OrderDetailComponent {
   }
 
   readonly total = () => {
+    if (this.editing()) {
+      return this.itemsArray.controls.reduce((sum, control) => {
+        const quantity = Number(control.get('quantity')?.value ?? 0);
+        const price = Number(control.get('price')?.value ?? 0);
+        return sum + quantity * price;
+      }, 0);
+    }
+
     const o = this.order();
     return o ? o.items.reduce((sum, item) => sum + item.price * item.quantity, 0) : 0;
   };
@@ -170,6 +185,13 @@ export class OrderDetailComponent {
     if (s === 'active') return 'bg-emerald-100 text-emerald-700';
     if (s === 'completed') return 'bg-slate-100 text-slate-600';
     return 'bg-red-100 text-red-600';
+  };
+
+  readonly statusLabel = () => {
+    const s = this.order()?.status;
+    if (s === 'active') return 'Open';
+    if (s === 'completed') return 'Concluded';
+    return 'Cancelled';
   };
 
   constructor() {
@@ -195,11 +217,19 @@ export class OrderDetailComponent {
     items.forEach((item) => {
       this.itemsArray.push(this.fb.group({
         name: [item.name, Validators.required],
-        quantity: [item.quantity, Validators.required],
-        price: [item.price, Validators.required]
+        quantity: [item.quantity, [Validators.required, Validators.min(1)]],
+        price: [item.price, [Validators.required, Validators.min(0)]]
       }));
     });
     this.editing.set(true);
+  }
+
+  addItem(): void {
+    this.itemsArray.push(this.fb.group({
+      name: ['', Validators.required],
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      price: [0, [Validators.required, Validators.min(0)]]
+    }));
   }
 
   removeItem(index: number): void {
@@ -207,7 +237,19 @@ export class OrderDetailComponent {
   }
 
   async saveItems(): Promise<void> {
-    const items = this.itemsArray.getRawValue().filter((i: any) => i.quantity > 0) as OrderItem[];
+    const items = this.itemsArray.getRawValue()
+      .map((item) => ({
+        name: String(item['name'] ?? '').trim(),
+        quantity: Number(item['quantity'] ?? 0),
+        price: Number(item['price'] ?? 0)
+      }))
+      .filter((item) => item.name && item.quantity > 0) as OrderItem[];
+
+    if (!items.length) {
+      toast.error('Add at least one item before saving');
+      return;
+    }
+
     try {
       await this.orderService.updateOrder(this.orderId, { items });
       toast.success('Items updated');

@@ -14,7 +14,7 @@ import { NotificationBellComponent } from '../../shared/components/notification-
       <header class="sticky top-0 z-20 border-b border-slate-200 bg-white">
         <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <a routerLink="/dashboard" class="flex items-center gap-2">
-            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">S</div>
+            <img src="logo.png" alt="ServeSync" class="h-8 w-8 rounded-lg object-cover" />
             <span class="text-lg font-extrabold text-primary">ServeSync</span>
           </a>
           <div class="flex items-center gap-2">

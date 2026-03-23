@@ -18,10 +18,13 @@ function signToken(user) {
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, fullName, storeName, industry } = req.body;
+    const { email, password, fullName, storeName, industry, subscriptionTier } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
+
+    const allowedTiers = new Set(['tier1', 'tier2', 'tier3']);
+    const tier = allowedTiers.has(subscriptionTier) ? subscriptionTier : 'tier1';
 
     const [existing] = await pool.query('SELECT id FROM profiles WHERE email = ?', [email]);
     if (existing.length) {
@@ -33,11 +36,11 @@ router.post('/register', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
 
     await pool.query(
-      'INSERT INTO profiles (id, full_name, email, password_hash, role, store_id, store_name, industry, is_online, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE, CURRENT_TIMESTAMP)',
-      [id, fullName || null, email, hash, 'admin', storeId, storeName || null, industry || 'restaurant']
+      'INSERT INTO profiles (id, full_name, email, password_hash, role, store_id, store_name, industry, subscription_tier, is_online, last_seen_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, CURRENT_TIMESTAMP)',
+      [id, fullName || null, email, hash, 'admin', storeId, storeName || null, industry || 'restaurant', tier]
     );
 
-    const user = { id, email, role: 'admin', store_id: storeId, full_name: fullName || null, store_name: storeName || null, industry: industry || 'restaurant', subscription_tier: 'tier1' };
+    const user = { id, email, role: 'admin', store_id: storeId, full_name: fullName || null, store_name: storeName || null, industry: industry || 'restaurant', subscription_tier: tier };
     const token = signToken(user);
     res.status(201).json({ token, user });
   } catch (err) {
@@ -129,9 +132,12 @@ router.patch('/profile', auth, async (req, res) => {
   try {
     const fields = [];
     const values = [];
-    const allowed = ['full_name', 'store_name'];
+    const allowed = ['full_name', 'store_name', 'subscription_tier'];
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
+        if (key === 'subscription_tier' && !['tier1', 'tier2', 'tier3'].includes(req.body[key])) {
+          return res.status(400).json({ error: 'Invalid subscription tier' });
+        }
         fields.push(`${key} = ?`);
         values.push(req.body[key]);
       }

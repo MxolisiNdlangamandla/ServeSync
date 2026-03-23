@@ -14,9 +14,12 @@ export interface Order {
   customer_name: string | null;
   items: OrderItem[];
   status: OrderStatus;
+  completed_at: string | null;
   call_staff: boolean;
   request_bill: boolean;
   payment_status: PaymentStatus;
+  review_rating: number | null;
+  review_comment: string | null;
   notes: string | null;
   access_token: string;
   created_at: string;

@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Profile } from '../models/profile.model';
+import { Profile, SubscriptionTier } from '../models/profile.model';
 
 export interface SignUpParams {
   email: string;
@@ -11,6 +11,7 @@ export interface SignUpParams {
   fullName: string;
   storeName: string;
   industry?: string;
+  subscriptionTier: SubscriptionTier;
 }
 
 interface AuthResponse {
@@ -52,7 +53,8 @@ export class AuthService {
       password: params.password,
       fullName: params.fullName,
       storeName: params.storeName,
-      industry: params.industry || 'restaurant'
+      industry: params.industry || 'restaurant',
+      subscriptionTier: params.subscriptionTier
     }));
     if (res?.token) {
       localStorage.setItem('servesync-token', res.token);
@@ -75,7 +77,7 @@ export class AuthService {
     return firstValueFrom(this.http.post<{ inviteToken?: string }>(`${this.api}/staff/invite`, { email, role, full_name: fullName }));
   }
 
-  async updateProfile(data: { full_name?: string; store_name?: string }): Promise<void> {
+  async updateProfile(data: { full_name?: string; store_name?: string; subscription_tier?: 'tier1' | 'tier2' | 'tier3' }): Promise<void> {
     const profile = await firstValueFrom(this.http.patch<Profile>(`${this.api}/auth/profile`, data));
     this.profileState.set(profile);
   }

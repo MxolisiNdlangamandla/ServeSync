@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, OnDestroy, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LucideAngularModule, Eye, Check, Bell, Receipt } from 'lucide-angular';
 import { Order } from '../../../core/models/order.model';
@@ -18,7 +18,7 @@ import { TimeElapsedComponent } from '../time-elapsed/time-elapsed.component';
           <div>
             <h3 class="text-lg font-bold text-primary">{{ labels().table }} {{ order().table_number }}</h3>
             <p class="mt-0.5 flex items-center gap-2 text-xs text-slate-400">
-              <span class="inline-flex items-center gap-1">&#9201; <app-time-elapsed [createdAt]="order().created_at" /></span>
+              <span class="inline-flex items-center gap-1">&#9201; {{ timeLabel() }} <app-time-elapsed [createdAt]="order().created_at" [endAt]="timeEndAt()" /></span>
               <span class="font-bold text-primary">{{ money(orderTotal()) }}</span>
             </p>
           </div>
@@ -33,17 +33,25 @@ import { TimeElapsedComponent } from '../time-elapsed/time-elapsed.component';
                 <lucide-angular [img]="receiptIcon" class="h-3 w-3"></lucide-angular> Bill
               </span>
             }
-            @if (urgency() === 'red') {
+            @if (order().status === 'completed') {
+              <span class="flex items-center gap-1 text-xs font-semibold text-slate-500">
+                <span class="h-2 w-2 rounded-full bg-slate-400"></span> Completed
+              </span>
+            } @else if (order().status === 'cancelled') {
               <span class="flex items-center gap-1 text-xs font-semibold text-red-500">
-                <span class="h-2 w-2 rounded-full bg-red-500"></span> Urgent
+                <span class="h-2 w-2 rounded-full bg-red-500"></span> Cancelled
+              </span>
+            } @else if (urgency() === 'red') {
+              <span class="flex items-center gap-1 text-xs font-semibold text-red-500">
+                <span class="h-2 w-2 rounded-full bg-red-500"></span> {{ urgencyLabel() }}
               </span>
             } @else if (urgency() === 'amber') {
               <span class="flex items-center gap-1 text-xs font-semibold text-amber-500">
-                <span class="h-2 w-2 rounded-full bg-amber-500"></span> Waiting
+                <span class="h-2 w-2 rounded-full bg-amber-500"></span> {{ urgencyLabel() }}
               </span>
             } @else {
               <span class="flex items-center gap-1 text-xs font-semibold text-emerald-500">
-                <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Fresh
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span> {{ urgencyLabel() }}
               </span>
             }
           </div>
@@ -81,7 +89,7 @@ import { TimeElapsedComponent } from '../time-elapsed/time-elapsed.component';
     </article>
   `
 })
-export class OrderCardComponent {
+export class OrderCardComponent implements OnDestroy {
   readonly order = input.required<Order>();
   readonly completeOrder = output<string>();
   private readonly industryService = inject(IndustryService);
@@ -90,15 +98,33 @@ export class OrderCardComponent {
   readonly checkIcon = Check;
   readonly bellIcon = Bell;
   readonly receiptIcon = Receipt;
+  private readonly now = signal(Date.now());
+  private readonly timer = window.setInterval(() => this.now.set(Date.now()), 1000);
 
-  readonly urgency = computed(() => severityClass(this.order().created_at));
+  readonly urgency = computed(() => severityClass(this.order().created_at, this.now()));
   readonly orderTotal = computed(() => this.order().items.reduce((sum, i) => sum + i.price * i.quantity, 0));
+  readonly urgencyLabel = computed(() => {
+    const level = this.urgency();
+    if (level === 'red') return 'Urgent';
+    if (level === 'amber') return 'In Progress';
+    return 'Open';
+  });
+
+  timeLabel(): string {
+    return this.order().status === 'completed' ? 'Took' : '';
+  }
+
+  timeEndAt(): string | null {
+    return this.order().status === 'completed' ? (this.order().completed_at ?? this.order().updated_at) : null;
+  }
 
   money(value: number): string {
     return formatCurrency(value);
   }
 
   borderClass(): string {
+    if (this.order().status === 'completed') return 'border-slate-200';
+    if (this.order().status === 'cancelled') return 'border-red-200';
     const level = this.urgency();
     if (level === 'red') return 'border-red-200';
     if (level === 'amber') return 'border-amber-200';
@@ -106,9 +132,15 @@ export class OrderCardComponent {
   }
 
   leftBorderClass(): string {
+    if (this.order().status === 'completed') return 'border-l-slate-400';
+    if (this.order().status === 'cancelled') return 'border-l-red-500';
     const level = this.urgency();
     if (level === 'red') return 'border-l-red-500';
     if (level === 'amber') return 'border-l-amber-500';
     return 'border-l-emerald-500';
+  }
+
+  ngOnDestroy(): void {
+    window.clearInterval(this.timer);
   }
 }

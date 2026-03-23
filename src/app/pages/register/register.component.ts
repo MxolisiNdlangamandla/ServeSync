@@ -5,6 +5,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { toast } from 'ngx-sonner';
 import { AuthService } from '../../core/services/auth.service';
 import { INDUSTRY_OPTIONS, IndustryType } from '../../core/models/industry.model';
+import { SubscriptionTier } from '../../core/models/profile.model';
 
 function passwordMatch(control: AbstractControl): ValidationErrors | null {
   const pw = control.get('password');
@@ -41,6 +42,35 @@ function passwordMatch(control: AbstractControl): ValidationErrors | null {
                 </option>
               }
             </select>
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-700">Choose your plan</label>
+            <div class="space-y-3">
+              @for (plan of plans; track plan.id) {
+                <button
+                  type="button"
+                  class="w-full rounded-xl border-2 p-4 text-left transition-colors"
+                  [class]="selectedTier() === plan.id ? 'border-accent bg-accent/5' : 'border-slate-200 hover:border-slate-300'"
+                  (click)="selectedTier.set(plan.id)">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-sm font-bold text-primary">{{ plan.name }}</div>
+                      <div class="mt-1 text-xs text-slate-500">{{ plan.description }}</div>
+                    </div>
+                    <div class="text-right">
+                      <div class="text-lg font-black text-primary">{{ plan.price }}</div>
+                      <div class="text-[11px] text-slate-400">{{ plan.unit }}</div>
+                    </div>
+                  </div>
+                  <ul class="mt-3 space-y-1 text-xs text-slate-600">
+                    @for (feature of plan.features; track feature) {
+                      <li>{{ feature }}</li>
+                    }
+                  </ul>
+                </button>
+              }
+            </div>
           </div>
 
           <div>
@@ -88,6 +118,33 @@ export class RegisterComponent {
   readonly loading = signal(false);
   readonly industries = INDUSTRY_OPTIONS;
   readonly selectedIndustry = signal<IndustryType>('restaurant');
+  readonly selectedTier = signal<SubscriptionTier>('tier1');
+  readonly plans = [
+    {
+      id: 'tier1' as SubscriptionTier,
+      name: 'Starter',
+      price: 'Free',
+      unit: 'custom items only',
+      description: 'Create orders and manage staff without a saved menu.',
+      features: ['Create orders', 'Add staff', 'Use manual custom items']
+    },
+    {
+      id: 'tier2' as SubscriptionTier,
+      name: 'Professional',
+      price: 'R500',
+      unit: 'per month',
+      description: 'Unlock menu management for one store.',
+      features: ['Everything in Starter', 'Saved menu items', 'Up to 20 menu items']
+    },
+    {
+      id: 'tier3' as SubscriptionTier,
+      name: 'Enterprise',
+      price: 'R450',
+      unit: 'per shop / month',
+      description: 'Support multiple shop locations.',
+      features: ['Everything in Professional', 'Multiple shops', 'Scale by location']
+    }
+  ];
 
   readonly form = this.fb.nonNullable.group({
     storeName: ['', Validators.required],
@@ -112,7 +169,8 @@ export class RegisterComponent {
         password: v.password,
         fullName: v.fullName,
         storeName: v.storeName,
-        industry: this.selectedIndustry()
+        industry: this.selectedIndustry(),
+        subscriptionTier: this.selectedTier()
       });
       toast.success('Account created! Redirecting to dashboard...');
       await this.router.navigateByUrl('/dashboard');

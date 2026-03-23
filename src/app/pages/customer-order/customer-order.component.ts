@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnDestroy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideAngularModule, Bell, HandHelping, Receipt, UtensilsCrossed, Plus, CreditCard, Send } from 'lucide-angular';
+import { LucideAngularModule, Bell, HandHelping, Receipt, UtensilsCrossed, Plus, CreditCard, Send, Star } from 'lucide-angular';
 import { toast } from 'ngx-sonner';
 import { OrderService } from '../../core/services/order.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -122,10 +122,48 @@ import { formatCurrency } from '../../core/utils/formatters';
 
           <!-- Order completed / cancelled state -->
           @if (order()!.status !== 'active') {
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center">
-              <p class="text-sm font-semibold text-slate-500">
-                This order has been <span class="font-bold" [class]="order()!.status === 'completed' ? 'text-emerald-600' : 'text-red-500'">{{ order()!.status }}</span>.
-              </p>
+            <div class="space-y-4">
+              <div class="rounded-xl border border-slate-200 bg-white px-4 py-6 text-center">
+                <p class="text-sm font-semibold text-slate-500">
+                  This order has been <span class="font-bold" [class]="order()!.status === 'completed' ? 'text-slate-600' : 'text-red-500'">{{ order()!.status }}</span>.
+                </p>
+              </div>
+
+              @if (order()!.status === 'completed') {
+                <section class="rounded-xl border border-slate-200 bg-white p-4">
+                  <h2 class="mb-3 text-sm font-bold text-primary">Leave a review</h2>
+
+                  @if (order()!.review_rating) {
+                    <div class="space-y-2 rounded-lg bg-slate-50 p-4">
+                      <p class="text-sm font-semibold text-slate-700">Thanks for your feedback.</p>
+                      <p class="text-sm text-amber-500">{{ reviewStars(order()!.review_rating || 0) }}</p>
+                      @if (order()!.review_comment) {
+                        <p class="text-sm text-slate-600">{{ order()!.review_comment }}</p>
+                      }
+                    </div>
+                  } @else {
+                    <div class="flex gap-2">
+                      @for (star of [1, 2, 3, 4, 5]; track star) {
+                        <button type="button" class="rounded-full p-2 transition-colors"
+                          [class]="reviewRating() >= star ? 'text-amber-500' : 'text-slate-300 hover:text-amber-400'"
+                          (click)="reviewRating.set(star)">
+                          <lucide-angular [img]="starIcon" class="h-5 w-5 fill-current"></lucide-angular>
+                        </button>
+                      }
+                    </div>
+                    <textarea class="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-primary focus:outline-none"
+                      rows="4"
+                      placeholder="Share a quick review"
+                      [value]="reviewComment()"
+                      (input)="reviewComment.set(inputValue($event))"></textarea>
+                    <button type="button" class="mt-3 w-full rounded-full bg-primary px-4 py-3 font-bold text-white hover:bg-primary/90 disabled:opacity-50"
+                      [disabled]="submittingReview()"
+                      (click)="submitReview()">
+                      {{ submittingReview() ? 'Submitting...' : 'Submit Review' }}
+                    </button>
+                  }
+                </section>
+              }
             </div>
           }
         </main>
@@ -149,6 +187,7 @@ export class CustomerOrderComponent implements OnDestroy {
   readonly plusIcon = Plus;
   readonly creditCardIcon = CreditCard;
   readonly sendIcon = Send;
+  readonly starIcon = Star;
 
   readonly order = signal<Order | null>(null);
   readonly orderId = this.route.snapshot.paramMap.get('id') ?? '';
@@ -156,6 +195,9 @@ export class CustomerOrderComponent implements OnDestroy {
   readonly newItemName = signal('');
   readonly newItemQty = signal(1);
   readonly addingItem = signal(false);
+  readonly reviewRating = signal(5);
+  readonly reviewComment = signal('');
+  readonly submittingReview = signal(false);
 
   // Payment is enabled for Tier 2+ subscriptions
   // This is set when the order loads (the backend could include this, but for now we show it)
@@ -262,6 +304,30 @@ export class CustomerOrderComponent implements OnDestroy {
       this.load();
     } catch (e: any) {
       toast.error(e.message ?? 'Payment failed');
+    }
+  }
+
+  reviewStars(count: number): string {
+    return '★'.repeat(count) + '☆'.repeat(Math.max(0, 5 - count));
+  }
+
+  async submitReview(): Promise<void> {
+    if (this.submittingReview() || this.order()?.status !== 'completed' || this.order()?.review_rating) {
+      return;
+    }
+
+    this.submittingReview.set(true);
+    try {
+      await this.orderService.updateOrder(this.orderId, {
+        review_rating: this.reviewRating(),
+        review_comment: this.reviewComment().trim() || null
+      } as Partial<Order>, this.accessToken);
+      toast.success('Thanks for the review');
+      this.load();
+    } catch (e: any) {
+      toast.error(e.message ?? 'Failed to submit review');
+    } finally {
+      this.submittingReview.set(false);
     }
   }
 }

@@ -33,6 +33,14 @@ import { TimeElapsedComponent } from '../../shared/components/time-elapsed/time-
           <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Long Wait</p>
           <p class="text-3xl font-black text-red-500">{{ longWait() }}</p>
         </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+          <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Active Revenue</p>
+          <p class="text-3xl font-black text-primary">{{ money(activeRevenue()) }}</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+          <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Completed Revenue Today</p>
+          <p class="text-3xl font-black text-emerald-600">{{ money(completedRevenueToday()) }}</p>
+        </div>
       </div>
 
       <div class="rounded-xl border border-slate-200 bg-white p-4">
@@ -58,7 +66,7 @@ import { TimeElapsedComponent } from '../../shared/components/time-elapsed/time-
         </div>
         <div class="mt-1 flex gap-4 text-xs text-slate-400">
           <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> OK</span>
-          <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-400"></span> Waiting</span>
+          <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-400"></span> In Progress</span>
           <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-red-400"></span> Urgent</span>
         </div>
       </section>
@@ -116,31 +124,38 @@ export class ManagerOverviewComponent implements OnDestroy {
   readonly checkIcon = CheckCircle;
 
   readonly orders = signal<Order[]>([]);
+  readonly now = signal(Date.now());
+  private readonly clockHandle = window.setInterval(() => this.now.set(Date.now()), 1000);
 
   readonly activeOrders = computed(() => this.orders().filter((o) => o.status === 'active'));
   readonly activeTables = computed(() => this.activeOrders().length);
   readonly payingNow = computed(() => this.activeOrders().filter((o) => o.request_bill).length);
   readonly needsStaff = computed(() => this.activeOrders().filter((o) => o.call_staff).length);
-  readonly longWait = computed(() => this.activeOrders().filter((o) => minutesSince(o.created_at) >= 20).length);
+  readonly longWait = computed(() => this.activeOrders().filter((o) => minutesSince(o.created_at, this.now()) >= 20).length);
   readonly completedToday = computed(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return this.orders().filter((o) => o.status === 'completed' && o.updated_at.slice(0, 10) === today).length;
+    return this.orders().filter((o) => o.status === 'completed' && this.isToday(o.completed_at)).length;
+  });
+  readonly activeRevenue = computed(() => this.activeOrders().reduce((sum, order) => sum + this.orderTotal(order), 0));
+  readonly completedRevenueToday = computed(() => {
+    return this.orders()
+      .filter((o) => o.status === 'completed' && this.isToday(o.completed_at))
+      .reduce((sum, order) => sum + this.orderTotal(order), 0);
   });
 
   readonly greenPct = computed(() => {
     const active = this.activeOrders();
     if (!active.length) return 0;
-    return Math.round((active.filter((o) => severityClass(o.created_at) === 'emerald').length / active.length) * 100);
+    return Math.round((active.filter((o) => severityClass(o.created_at, this.now()) === 'emerald').length / active.length) * 100);
   });
   readonly amberPct = computed(() => {
     const active = this.activeOrders();
     if (!active.length) return 0;
-    return Math.round((active.filter((o) => severityClass(o.created_at) === 'amber').length / active.length) * 100);
+    return Math.round((active.filter((o) => severityClass(o.created_at, this.now()) === 'amber').length / active.length) * 100);
   });
   readonly redPct = computed(() => {
     const active = this.activeOrders();
     if (!active.length) return 0;
-    return Math.round((active.filter((o) => severityClass(o.created_at) === 'red').length / active.length) * 100);
+    return Math.round((active.filter((o) => severityClass(o.created_at, this.now()) === 'red').length / active.length) * 100);
   });
 
   constructor() {
@@ -150,6 +165,7 @@ export class ManagerOverviewComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this.pollHandle) clearInterval(this.pollHandle);
+    window.clearInterval(this.clockHandle);
   }
 
   load(): void {
@@ -164,8 +180,18 @@ export class ManagerOverviewComponent implements OnDestroy {
     return order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }
 
+  isToday(value: string | null): boolean {
+    if (!value) return false;
+
+    const date = new Date(value);
+    const now = new Date();
+    return date.getFullYear() === now.getFullYear()
+      && date.getMonth() === now.getMonth()
+      && date.getDate() === now.getDate();
+  }
+
   tableCard(order: Order): string {
-    const sev = severityClass(order.created_at);
+    const sev = severityClass(order.created_at, this.now());
     if (sev === 'red') return 'border-l-4 border-l-red-400';
     if (sev === 'amber') return 'border-l-4 border-l-amber-400';
     return 'border-l-4 border-l-emerald-400';
