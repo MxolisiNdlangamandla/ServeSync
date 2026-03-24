@@ -9,6 +9,29 @@ function parseOrder(row) {
   return { ...row, items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items };
 }
 
+async function hasStaffAccess(header, storeId) {
+  if (!header || !header.startsWith('Bearer ')) {
+    return false;
+  }
+
+  try {
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    let resolvedStoreId = decoded.store_id;
+
+    if (!resolvedStoreId && decoded.id) {
+      const [profiles] = await pool.query('SELECT store_id FROM profiles WHERE id = ?', [decoded.id]);
+      if (profiles.length) {
+        resolvedStoreId = profiles[0].store_id;
+      }
+    }
+
+    return resolvedStoreId === storeId;
+  } catch {
+    return false;
+  }
+}
+
 // GET /api/orders  (staff — scoped to store, with pagination)
 router.get('/', auth, async (req, res) => {
   try {
@@ -45,14 +68,7 @@ router.get('/:id', async (req, res) => {
 
     // If no valid JWT, require access_token query param
     const header = req.headers.authorization;
-    let authenticated = false;
-    if (header && header.startsWith('Bearer ')) {
-      try {
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET);
-        if (decoded.store_id === order.store_id) authenticated = true;
-      } catch { /* invalid token — fall through to access_token check */ }
-    }
+    const authenticated = await hasStaffAccess(header, order.store_id);
 
     if (!authenticated) {
       const token = req.query.token;
@@ -101,14 +117,7 @@ router.patch('/:id', async (req, res) => {
 
     // Authenticate: JWT or access_token
     const header = req.headers.authorization;
-    let isStaff = false;
-    if (header && header.startsWith('Bearer ')) {
-      try {
-        const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET);
-        if (decoded.store_id === order.store_id) isStaff = true;
-      } catch { /* fall through */ }
-    }
+    const isStaff = await hasStaffAccess(header, order.store_id);
     if (!isStaff) {
       const token = req.query.token || req.body.access_token;
       if (order.access_token !== token) {
@@ -116,10 +125,11 @@ router.patch('/:id', async (req, res) => {
       }
     }
 
-    // Customer can only update certain fields
+    // Customer can only update a restricted subset of fields. Status changes via
+    // access token are limited to closing an active order from the customer flow.
     const staffAllowed = ['status', 'call_staff', 'request_bill', 'payment_status', 'items', 'notes', 'customer_name', 'review_rating', 'review_comment'];
     const customerAllowed = ['call_staff', 'request_bill', 'items', 'payment_status', 'review_rating', 'review_comment'];
-    const allowed = isStaff ? staffAllowed : customerAllowed;
+    const allowed = isStaff ? [...staffAllowed] : [...customerAllowed];
 
     const fields = [];
     const values = [];
@@ -132,6 +142,25 @@ router.patch('/:id', async (req, res) => {
       const rating = Number(req.body.review_rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
         return res.status(400).json({ error: 'Review rating must be between 1 and 5' });
+      }
+    }
+
+    if (req.body.status !== undefined) {
+      const status = req.body.status;
+      if (!['active', 'completed', 'cancelled'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid order status' });
+      }
+
+      if (!isStaff) {
+        if (order.status !== 'active') {
+          return res.status(400).json({ error: 'Only active orders can be updated from this link' });
+        }
+
+        if (!['completed', 'cancelled'].includes(status)) {
+          return res.status(403).json({ error: 'Customers can only complete or cancel an active order' });
+        }
+
+        allowed.push('status');
       }
     }
 

@@ -129,6 +129,9 @@ export class DashboardComponent implements OnDestroy {
       }
       toast.success('Order completed');
       this.load();
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to complete order';
+      toast.error(message);
     });
   }
 

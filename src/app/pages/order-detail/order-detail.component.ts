@@ -271,14 +271,24 @@ export class OrderDetailComponent {
   }
 
   async complete(): Promise<void> {
-    await this.orderService.updateOrder(this.orderId, { status: 'completed' });
-    toast.success('Order completed');
-    this.router.navigateByUrl('/dashboard');
+    try {
+      await this.orderService.updateOrder(this.orderId, { status: 'completed' });
+      toast.success('Order completed');
+      this.router.navigateByUrl('/dashboard');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to complete order';
+      toast.error(message);
+    }
   }
 
   async cancel(): Promise<void> {
-    await this.orderService.updateOrder(this.orderId, { status: 'cancelled' });
-    toast.success('Order cancelled');
-    this.router.navigateByUrl('/dashboard');
+    try {
+      await this.orderService.updateOrder(this.orderId, { status: 'cancelled' });
+      toast.success('Order cancelled');
+      this.router.navigateByUrl('/dashboard');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel order';
+      toast.error(message);
+    }
   }
 }

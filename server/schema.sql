@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS servesync;
-USE servesync;
-
 -- Profiles / users
 CREATE TABLE IF NOT EXISTS profiles (
   id          VARCHAR(36)  PRIMARY KEY,
