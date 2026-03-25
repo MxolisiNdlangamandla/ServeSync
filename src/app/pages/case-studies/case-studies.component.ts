@@ -1,15 +1,19 @@
+import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-case-studies',
-  imports: [RouterLink],
+  imports: [RouterLink, NgOptimizedImage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-[radial-gradient(circle_at_top,_#fff7ed_0%,_#f8fafc_48%,_#ffffff_100%)]">
       <header class="border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
         <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <a routerLink="/" class="text-lg font-black text-primary">ServeSync</a>
+          <a routerLink="/" class="flex items-center gap-2 text-lg font-black text-primary">
+            <img ngSrc="logo.png" width="28" height="28" alt="ServeSync" class="h-7 w-7 rounded-md shadow-sm" />
+            <span>ServeSync</span>
+          </a>
           <div class="flex gap-2">
             <a routerLink="/" class="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50">Home</a>
             <a routerLink="/register" class="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600">Get Started</a>

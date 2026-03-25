@@ -170,9 +170,9 @@ The dashboard should make plan differences visible immediately after login.
 
 ### Essentials dashboard should emphasize
 - menu-based ordering for small businesses
-- simple combo or bundled-item setup
+- saved menu items
 - faster repeat order entry
-- lightweight performance visibility
+- a cleaner paid step between Starter and Professional
 - clear upgrade path to Professional for heavier volume
 
 ### Professional dashboard should emphasize

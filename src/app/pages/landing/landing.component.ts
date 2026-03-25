@@ -313,12 +313,13 @@ export class LandingComponent {
       cta: 'Start Essentials',
       features: [
         '1 store / location',
-        'Basic saved menu support',
-        'Simple combos and line items',
+        'Saved menu items',
         'Faster repeat order entry',
-        'Lightweight business reporting',
+        'Simpler paid step between Starter and Professional',
+        'Single-store menu workflow',
       ],
       excluded: [
+        'Accept online payments',
         'Advanced analytics',
         'Multi-location management',
         'Priority support',
