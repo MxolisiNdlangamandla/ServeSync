@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'admin' | 'manager' | 'supervisor' | 'user';
 export type SubscriptionTier = 'tier1' | 'tier2' | 'tier3' | 'tier4';
 
 export interface Profile {
@@ -8,6 +8,7 @@ export interface Profile {
   role: UserRole;
   store_id: string | null;
   store_name: string | null;
+  assigned_store_name?: string | null;
   industry: string | null;
   invite_token?: string | null;
   is_online?: boolean;

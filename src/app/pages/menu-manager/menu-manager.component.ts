@@ -7,6 +7,7 @@ import { LucideAngularModule, Plus, Pencil, Trash2, X } from 'lucide-angular';
 import { MenuItem } from '../../core/models/menu-item.model';
 import { AuthService } from '../../core/services/auth.service';
 import { MenuService } from '../../core/services/menu.service';
+import { StoreService } from '../../core/services/store.service';
 import { formatCurrency } from '../../core/utils/formatters';
 import { environment } from '../../../environments/environment';
 
@@ -21,18 +22,32 @@ interface CategoryRecord {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-5">
-      <header class="flex items-center justify-between">
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-3xl font-black text-primary">Menu</h1>
           <p class="text-sm text-slate-500">{{ items().length }} items</p>
         </div>
-        <button class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold text-white"
-          [class]="menuLocked() ? 'cursor-not-allowed bg-slate-300' : 'bg-accent hover:bg-orange-600'"
-          [disabled]="menuLocked()"
-          (click)="adding.set(true)">
-          <lucide-angular [img]="plusIcon" class="h-4 w-4"></lucide-angular>
-          Add Item
-        </button>
+        <div class="flex items-center gap-3">
+          @if (showSiteFilter()) {
+            <div class="min-w-[180px]">
+              <label class="mb-1 block text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Site View</label>
+              <select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-primary focus:outline-none"
+                [value]="selectedStoreId()"
+                (change)="selectStore($event)">
+                @for (site of siteOptions(); track site.id) {
+                  <option [value]="site.id">{{ site.name }}</option>
+                }
+              </select>
+            </div>
+          }
+          <button class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold text-white"
+            [class]="menuLocked() || categoriesRequired() ? 'cursor-not-allowed bg-slate-300' : 'bg-accent hover:bg-orange-600'"
+            [disabled]="menuLocked() || categoriesRequired()"
+            (click)="adding.set(true)">
+            <lucide-angular [img]="plusIcon" class="h-4 w-4"></lucide-angular>
+            Add Item
+          </button>
+        </div>
       </header>
 
       @if (menuLocked()) {
@@ -42,14 +57,25 @@ interface CategoryRecord {
               <h2 class="text-sm font-bold text-amber-900">Menu management is not available on your current plan</h2>
               <p class="mt-1 text-sm text-amber-800">You are on the Starter plan. Upgrade to Essentials, Professional, or Enterprise to add saved menu items. You can still create orders using manual custom items.</p>
             </div>
-            <a routerLink="/settings" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90">
+            <a routerLink="/admin" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90">
               Upgrade Plan
+            </a>
+          </div>
+        </section>
+      } @else if (categoriesRequired()) {
+        <section class="rounded-xl border border-sky-200 bg-sky-50 px-5 py-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-sky-900">Add categories before creating menu items</h2>
+              <p class="mt-1 text-sm text-sky-800">Your menu items need a category first. Create at least one category in Admin, then come back to assign items properly.</p>
+            </div>
+            <a routerLink="/admin" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90">
+              Manage Categories
             </a>
           </div>
         </section>
       }
 
-      <!-- Add Modal -->
       @if (adding()) {
         <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" (click)="adding.set(false)">
           <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" (click)="$event.stopPropagation()">
@@ -83,13 +109,22 @@ interface CategoryRecord {
                 <label class="mb-1 block text-sm font-semibold text-slate-700">Description</label>
                 <input class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-accent focus:outline-none" formControlName="description" placeholder="Short description" />
               </div>
+              @if (showSiteFilter()) {
+                <div>
+                  <label class="mb-1 block text-sm font-semibold text-slate-700">Assigned Site</label>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-accent focus:outline-none" formControlName="storeId">
+                    @for (site of assignableSites(); track site.id) {
+                      <option [value]="site.id">{{ site.name }}</option>
+                    }
+                  </select>
+                </div>
+              }
               <button class="w-full rounded-full bg-accent px-4 py-3 font-bold text-white hover:bg-orange-600 disabled:opacity-50" [disabled]="addForm.invalid">Add Item</button>
             </form>
           </div>
         </div>
       }
 
-      <!-- Edit Modal -->
       @if (editingId()) {
         <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" (click)="editingId.set('')">
           <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" (click)="$event.stopPropagation()">
@@ -123,13 +158,22 @@ interface CategoryRecord {
                 <label class="mb-1 block text-sm font-semibold text-slate-700">Description</label>
                 <input class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-accent focus:outline-none" formControlName="description" />
               </div>
+              @if (showSiteFilter()) {
+                <div>
+                  <label class="mb-1 block text-sm font-semibold text-slate-700">Assigned Site</label>
+                  <select class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-accent focus:outline-none" formControlName="storeId">
+                    @for (site of assignableSites(); track site.id) {
+                      <option [value]="site.id">{{ site.name }}</option>
+                    }
+                  </select>
+                </div>
+              }
               <button class="w-full rounded-full bg-primary px-4 py-3 font-bold text-white disabled:opacity-50" [disabled]="editForm.invalid">Save Changes</button>
             </form>
           </div>
         </div>
       }
 
-      <!-- Menu Items grouped by category -->
       @if (!items().length && !menuLocked()) {
         <section class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
           <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-2xl">🍽️</div>
@@ -147,6 +191,9 @@ interface CategoryRecord {
                 <div class="min-w-0 flex-1">
                   <h3 class="font-bold text-primary">{{ item.name }}</h3>
                   <p class="truncate text-xs text-slate-400">{{ item.description }}</p>
+                  @if (showSiteFilter() && item.assigned_store_name) {
+                    <p class="mt-1 text-xs text-slate-400">{{ item.assigned_store_name }}</p>
+                  }
                 </div>
                 <span class="text-sm font-bold text-primary">{{ money(item.price) }}</span>
                 <label class="relative inline-flex cursor-pointer">
@@ -172,12 +219,17 @@ export class MenuManagerComponent {
   private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  private readonly storeService = inject(StoreService);
   private readonly api = environment.apiUrl;
 
   readonly plusIcon = Plus;
   readonly pencilIcon = Pencil;
   readonly trashIcon = Trash2;
   readonly xIcon = X;
+  readonly showSiteFilter = computed(() => this.storeService.isEnterprise());
+  readonly selectedStoreId = this.storeService.selectedStoreId;
+  readonly siteOptions = this.storeService.siteOptions;
+  readonly assignableSites = computed(() => this.storeService.stores());
 
   readonly items = signal<MenuItem[]>([]);
   readonly categories = signal<string[]>([]);
@@ -188,14 +240,16 @@ export class MenuManagerComponent {
     name: ['', Validators.required],
     price: [0, Validators.required],
     category: ['', Validators.required],
-    description: ['']
+    description: [''],
+    storeId: ['']
   });
 
   readonly editForm = this.fb.nonNullable.group({
     name: ['', Validators.required],
     price: [0, Validators.required],
     category: ['', Validators.required],
-    description: ['']
+    description: [''],
+    storeId: ['']
   });
 
   readonly grouped = computed(() => {
@@ -206,25 +260,46 @@ export class MenuManagerComponent {
     return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
   });
   readonly menuLocked = computed(() => this.auth.profile()?.subscription_tier === 'tier1');
+  readonly categoriesRequired = computed(() => !this.menuLocked() && this.categories().length === 0);
 
   constructor() {
+    this.storeService.loadStores().catch(() => undefined);
     this.load();
   }
 
   load(): void {
-    this.menuService.getMenuItems().subscribe((rows) => {
+    const scopedStoreId = this.currentMenuStoreId();
+
+    this.menuService.getMenuItems(undefined, this.showSiteFilter() ? scopedStoreId : undefined).subscribe((rows) => {
       this.items.set(rows);
-      // Derive categories from existing items + stored categories
-      const fromItems = [...new Set(rows.map((r) => r.category))];
-      this.http.get<CategoryRecord[]>(`${this.api}/categories`).subscribe({
+      const fromItems = [...new Set(rows.map((row) => row.category))];
+      const categoryStoreId = this.showSiteFilter() ? (scopedStoreId === 'all' ? this.assignableSites()[0]?.id : scopedStoreId) : undefined;
+      this.http.get<CategoryRecord[]>(`${this.api}/categories`, { params: categoryStoreId ? { storeId: categoryStoreId } : undefined }).subscribe({
         next: (stored) => {
           const storedNames = stored.map((category) => category.name);
-          const merged = [...new Set([...storedNames, ...fromItems])].sort();
-          this.categories.set(merged);
+          this.categories.set([...new Set([...storedNames, ...fromItems])].sort());
         },
         error: () => this.categories.set(fromItems.sort())
       });
+
+      const fallbackStoreId = categoryStoreId || this.assignableSites()[0]?.id || '';
+      if (this.showSiteFilter() && fallbackStoreId && !this.addForm.controls.storeId.value) {
+        this.addForm.controls.storeId.setValue(fallbackStoreId);
+      }
     });
+  }
+
+  private currentMenuStoreId(): string | undefined {
+    const selectedStoreId = this.selectedStoreId();
+    if (!this.showSiteFilter()) {
+      return undefined;
+    }
+
+    if (selectedStoreId && selectedStoreId !== 'all') {
+      return selectedStoreId;
+    }
+
+    return selectedStoreId === 'all' ? 'all' : this.assignableSites()[0]?.id;
   }
 
   money(value: number): string {
@@ -237,9 +312,21 @@ export class MenuManagerComponent {
       return;
     }
 
-    this.menuService.createMenuItem(this.addForm.getRawValue()).then(() => {
+    if (this.categoriesRequired()) {
+      toast.error('Add categories first before creating menu items');
+      return;
+    }
+
+    const value = this.addForm.getRawValue();
+    this.menuService.createMenuItem({
+      name: value.name,
+      price: value.price,
+      category: value.category,
+      description: value.description,
+      storeId: this.showSiteFilter() ? value.storeId || this.assignableSites()[0]?.id : undefined,
+    }).then(() => {
       toast.success('Menu item added');
-      this.addForm.reset({ name: '', price: 0, category: '', description: '' });
+      this.addForm.reset({ name: '', price: 0, category: '', description: '', storeId: value.storeId });
       this.adding.set(false);
       this.load();
     }).catch((err: any) => toast.error(err.error?.error ?? 'Failed to add menu item'));
@@ -261,12 +348,18 @@ export class MenuManagerComponent {
       return;
     }
 
+    if (this.categoriesRequired()) {
+      toast.error('Add categories first before editing menu items');
+      return;
+    }
+
     this.editingId.set(item.id);
     this.editForm.reset({
       name: item.name,
       price: Number(item.price),
       category: item.category,
-      description: item.description ?? ''
+      description: item.description ?? '',
+      storeId: item.store_id ?? this.assignableSites()[0]?.id ?? ''
     });
   }
 
@@ -277,7 +370,14 @@ export class MenuManagerComponent {
       return;
     }
 
-    this.menuService.updateMenuItem(this.editingId(), this.editForm.getRawValue()).then(() => {
+    const value = this.editForm.getRawValue();
+    this.menuService.updateMenuItem(this.editingId(), {
+      name: value.name,
+      price: value.price,
+      category: value.category,
+      description: value.description,
+      storeId: this.showSiteFilter() ? value.storeId : undefined,
+    }).then(() => {
       toast.success('Item updated');
       this.editingId.set('');
       this.load();
@@ -294,5 +394,10 @@ export class MenuManagerComponent {
       toast.success('Item deleted');
       this.load();
     }).catch((err: any) => toast.error(err.error?.error ?? 'Failed to delete menu item'));
+  }
+
+  selectStore(event: Event): void {
+    this.storeService.setSelectedStore((event.target as HTMLSelectElement).value);
+    this.load();
   }
 }

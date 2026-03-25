@@ -129,7 +129,7 @@ export class RegisterComponent {
       features: ['Create orders', 'Add staff', 'Use manual custom items', 'Customer requests and bill calls']
     },
     {
-      id: 'tier4' as SubscriptionTier,
+      id: 'tier3' as SubscriptionTier,
       name: 'Essentials',
       price: 'R259',
       unit: 'per month',
@@ -145,7 +145,7 @@ export class RegisterComponent {
       features: ['Everything in Starter', 'Saved menu items', 'Online payments', 'Advanced analytics']
     },
     {
-      id: 'tier3' as SubscriptionTier,
+      id: 'tier4' as SubscriptionTier,
       name: 'Enterprise',
       price: 'From R450',
       unit: 'per shop / month',

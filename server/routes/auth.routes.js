@@ -40,6 +40,11 @@ router.post('/register', async (req, res) => {
       [id, fullName || null, email, hash, 'admin', storeId, storeName || null, industry || 'restaurant', tier]
     );
 
+    await pool.query(
+      'INSERT INTO stores (id, owner_profile_id, name) VALUES (?, ?, ?)',
+      [storeId, id, storeName || 'Primary Store']
+    );
+
     const user = { id, email, role: 'admin', store_id: storeId, full_name: fullName || null, store_name: storeName || null, industry: industry || 'restaurant', subscription_tier: tier };
     const token = signToken(user);
     res.status(201).json({ token, user });
@@ -145,6 +150,14 @@ router.patch('/profile', auth, async (req, res) => {
     if (!fields.length) return res.status(400).json({ error: 'No valid fields' });
     values.push(req.user.id);
     await pool.query(`UPDATE profiles SET ${fields.join(', ')} WHERE id = ?`, values);
+
+    if (req.body.store_name !== undefined && req.user.store_id) {
+      await pool.query(
+        'UPDATE stores SET name = ? WHERE id = ? AND owner_profile_id = ?',
+        [req.body.store_name || 'Primary Store', req.user.store_id, req.user.id]
+      );
+    }
+
     const [rows] = await pool.query(
       'SELECT id, full_name, email, role, store_id, store_name, industry, subscription_tier, invite_token, is_online, last_seen_at FROM profiles WHERE id = ?',
       [req.user.id]

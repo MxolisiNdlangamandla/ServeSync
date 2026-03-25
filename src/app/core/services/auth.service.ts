@@ -34,16 +34,18 @@ export class AuthService {
     const token = localStorage.getItem('servesync-token');
     if (token) {
       this.loggedIn.set(true);
-      this.loadProfile();
+      this.ensureProfile();
     }
   }
 
-  private async loadProfile(): Promise<void> {
+  async ensureProfile(): Promise<Profile | null> {
     try {
       const profile = await firstValueFrom(this.http.get<Profile>(`${this.api}/auth/me`));
       this.profileState.set(profile ?? null);
+      return profile ?? null;
     } catch {
       this.profileState.set(null);
+      return null;
     }
   }
 
@@ -73,8 +75,8 @@ export class AuthService {
     }
   }
 
-  async inviteStaff(email: string, role: string = 'user', fullName?: string): Promise<{ inviteToken?: string }> {
-    return firstValueFrom(this.http.post<{ inviteToken?: string }>(`${this.api}/staff/invite`, { email, role, full_name: fullName }));
+  async inviteStaff(email: string, role: string = 'user', fullName?: string, storeId?: string): Promise<{ inviteToken?: string }> {
+    return firstValueFrom(this.http.post<{ inviteToken?: string }>(`${this.api}/staff/invite`, { email, role, full_name: fullName, storeId }));
   }
 
   async updateProfile(data: { full_name?: string; store_name?: string; subscription_tier?: 'tier1' | 'tier2' | 'tier3' | 'tier4' }): Promise<void> {

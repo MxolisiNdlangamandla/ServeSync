@@ -10,6 +10,7 @@ const menuRoutes = require('./routes/menu.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
 const staffRoutes = require('./routes/staff.routes');
 const categoriesRoutes = require('./routes/categories.routes');
+const storesRoutes = require('./routes/stores.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/stores', storesRoutes);
 
 // Health check
 app.get('/api/health', async (_req, res) => {

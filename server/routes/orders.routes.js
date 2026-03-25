@@ -9,6 +9,26 @@ function parseOrder(row) {
   return { ...row, items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items };
 }
 
+async function getAccessibleStoreIds(user) {
+  if (!user.store_id) {
+    return [];
+  }
+
+  if (user.role === 'admin' && user.subscription_tier === 'tier4') {
+    const [rows] = await pool.query(
+      'SELECT id FROM stores WHERE owner_profile_id = ? ORDER BY created_at ASC',
+      [user.id]
+    );
+    const ids = rows.map((row) => row.id);
+    if (user.store_id && !ids.includes(user.store_id)) {
+      ids.unshift(user.store_id);
+    }
+    return ids.length ? ids : [user.store_id];
+  }
+
+  return [user.store_id];
+}
+
 async function hasStaffAccess(header, storeId) {
   if (!header || !header.startsWith('Bearer ')) {
     return false;
@@ -35,15 +55,24 @@ async function hasStaffAccess(header, storeId) {
 // GET /api/orders  (staff — scoped to store, with pagination)
 router.get('/', auth, async (req, res) => {
   try {
-    const storeId = req.user.store_id;
-    if (!storeId) return res.status(403).json({ error: 'No store associated with this account' });
+    const accessibleStoreIds = await getAccessibleStoreIds(req.user);
+    if (!accessibleStoreIds.length) return res.status(403).json({ error: 'No store associated with this account' });
 
     const status = req.query.status;
+    const requestedStoreId = req.query.storeId;
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 200);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
 
-    let sql = 'SELECT * FROM orders WHERE store_id = ?';
-    const params = [storeId];
+    let scopedStoreIds = accessibleStoreIds;
+    if (requestedStoreId && requestedStoreId !== 'all') {
+      if (!accessibleStoreIds.includes(requestedStoreId)) {
+        return res.status(403).json({ error: 'You do not have access to that store' });
+      }
+      scopedStoreIds = [requestedStoreId];
+    }
+
+    let sql = `SELECT * FROM orders WHERE store_id IN (${scopedStoreIds.map(() => '?').join(', ')})`;
+    const params = [...scopedStoreIds];
     if (status && status !== 'all') {
       sql += ' AND status = ?';
       params.push(status);

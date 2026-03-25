@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LucideAngularModule, Plus, Search } from 'lucide-angular';
 import { Order } from '../../core/models/order.model';
 import { OrderService } from '../../core/services/order.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { IndustryService } from '../../core/services/industry.service';
-import { AuthService } from '../../core/services/auth.service';
+import { StoreService } from '../../core/services/store.service';
 import { OrderCardComponent } from '../../shared/components/order-card/order-card.component';
 import { toast } from 'ngx-sonner';
 
@@ -17,100 +17,51 @@ import { toast } from 'ngx-sonner';
   template: `
     <section class="space-y-5">
       <header>
-        <h1 class="text-3xl font-black text-primary">Dashboard</h1>
-        <div class="mt-2 flex flex-wrap gap-3">
-          <div class="rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">{{ activeCount() }} active</div>
-          @if (alertCount() > 0) {
-            <div class="rounded-lg bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600">{{ alertCount() }} alert{{ alertCount() !== 1 ? 's' : '' }}</div>
-          }
-        </div>
-        <a routerLink="/orders/new" class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-orange-600">
-          <lucide-angular [img]="plusIcon" class="h-4 w-4"></lucide-angular>
-          New {{ labels().order }}
-        </a>
-      </header>
-
-      <section class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.8fr)]">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Current Plan</p>
-              <h2 class="mt-2 text-2xl font-black text-primary">{{ planAccess().name }}</h2>
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 class="text-3xl font-black text-primary">Dashboard</h1>
+            <div class="mt-2 flex flex-wrap gap-3">
+              <div class="rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700">{{ activeCount() }} active</div>
+              @if (alertCount() > 0) {
+                <div class="rounded-lg bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600">{{ alertCount() }} alert{{ alertCount() !== 1 ? 's' : '' }}</div>
+              }
             </div>
-            <span class="rounded-full px-3 py-1 text-xs font-bold"
-              [class]="planAccess().badgeClass">{{ planAccess().badge }}</span>
-          </div>
-          <p class="mt-3 text-sm leading-7 text-slate-600">{{ planAccess().summary }}</p>
-
-          <div class="mt-5 grid gap-4 md:grid-cols-2">
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">Available Now</p>
-              <ul class="mt-3 space-y-2 text-sm text-slate-700">
-                @for (item of planAccess().available; track item) {
-                  <li class="flex gap-2">
-                    <span class="text-emerald-600">&#10003;</span>
-                    <span>{{ item }}</span>
-                  </li>
-                }
-              </ul>
-            </div>
-            <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4">
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">Not In Your Plan</p>
-              <ul class="mt-3 space-y-2 text-sm text-slate-700">
-                @for (item of planAccess().locked; track item) {
-                  <li class="flex gap-2">
-                    <span class="text-amber-600">&#10005;</span>
-                    <span>{{ item }}</span>
-                  </li>
-                }
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Plan Flow</p>
-              <h2 class="mt-2 text-2xl font-black text-primary">What changes as you move up</h2>
-            </div>
-            <p class="text-sm text-slate-500">Each plan makes the next upgrade step visible, including what stays locked until you move up.</p>
-          </div>
-
-          <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            @for (plan of dashboardPlans(); track plan.name) {
-              <article class="rounded-xl border p-4"
-                [class]="plan.state === 'current'
-                  ? 'border-primary bg-primary/5'
-                  : plan.state === 'available'
-                      ? 'border-emerald-200 bg-emerald-50/60'
-                      : 'border-slate-200 bg-white'">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 class="text-sm font-black text-primary">{{ plan.name }}</h3>
-                    <p class="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">{{ plan.price }}</p>
-                  </div>
-                  <span class="rounded-full px-2.5 py-1 text-[11px] font-bold"
-                    [class]="plan.state === 'current'
-                      ? 'bg-primary text-white'
-                      : plan.state === 'available'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-slate-100 text-slate-600'">{{ plan.badge }}</span>
-                </div>
-                <p class="mt-3 text-sm leading-6 text-slate-600">{{ plan.summary }}</p>
-                <ul class="mt-3 space-y-2 text-xs leading-6 text-slate-600">
-                  @for (feature of plan.features; track feature) {
-                    <li class="flex gap-2">
-                      <span class="text-accent">•</span>
-                      <span>{{ feature }}</span>
-                    </li>
+            @if (showSiteFilter()) {
+              <div class="mt-3 max-w-xs">
+                <label class="mb-1 block text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Site View</label>
+                <select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-primary focus:outline-none"
+                  [value]="selectedStoreId()"
+                  (change)="selectStore($event)">
+                  @for (site of siteOptions(); track site.id) {
+                    <option [value]="site.id">{{ site.name }}</option>
                   }
-                </ul>
-              </article>
+                </select>
+              </div>
             }
+            <a routerLink="/orders/new" class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-orange-600">
+              <lucide-angular [img]="plusIcon" class="h-4 w-4"></lucide-angular>
+              New {{ labels().order }}
+            </a>
+          </div>
+
+          <div class="lg:min-w-[260px] lg:max-w-[300px]">
+            <div class="rounded-xl bg-slate-50/60 px-4 py-3">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-base font-medium text-primary">{{ liveDayLabel() }}</p>
+                  <p class="mt-1 text-sm text-slate-500">{{ liveDateLabel() }}</p>
+                </div>
+                <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700"
+                  [class]="isOnline() ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'">
+                  {{ isOnline() ? 'Online' : 'Offline' }}
+                </span>
+              </div>
+              <p class="mt-2 text-xl font-medium tracking-tight text-primary">{{ liveTimeLabel() }}</p>
+              <p class="mt-1 text-sm text-slate-500">Updating in real time.</p>
+            </div>
           </div>
         </div>
-      </section>
+      </header>
 
       <div class="space-y-3">
         <div class="relative">
@@ -122,7 +73,11 @@ import { toast } from 'ngx-sonner';
             <button class="relative pb-2.5 text-sm font-semibold transition-colors"
                     [class]="tab === currentTab() ? 'text-primary' : 'text-slate-400 hover:text-slate-600'"
                     (click)="currentTab.set(tab)">
-              {{ tab }}
+              <span>{{ tab }}</span>
+              <span class="ml-2 text-xs font-semibold"
+                    [class]="tab === currentTab() ? 'text-primary/70' : 'text-slate-400'">
+                {{ tabCount(tab) }}
+              </span>
               @if (tab === currentTab()) {
                 <span class="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary"></span>
               }
@@ -154,146 +109,31 @@ export class DashboardComponent implements OnDestroy {
   private readonly orderService = inject(OrderService);
   private readonly notificationService = inject(NotificationService);
   private readonly industryService = inject(IndustryService);
-  private readonly auth = inject(AuthService);
+  private readonly storeService = inject(StoreService);
+  private readonly dayFormatter = new Intl.DateTimeFormat('en-ZA', { weekday: 'long' });
+  private readonly dateFormatter = new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
+  private readonly timeFormatter = new Intl.DateTimeFormat('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   readonly plusIcon = Plus;
   readonly searchIcon = Search;
   readonly labels = this.industryService.labels;
-  readonly tabs = ['Active', 'Completed', 'All'];
+  readonly siteOptions = this.storeService.siteOptions;
+  readonly selectedStoreId = this.storeService.selectedStoreId;
+  readonly showSiteFilter = computed(() => this.storeService.isEnterprise());
+  readonly tabs = ['Active', 'Completed', 'Cancelled', 'All'];
   readonly orders = signal<Order[]>([]);
   readonly search = signal('');
   readonly currentTab = signal('Active');
-  readonly currentTier = computed(() => this.auth.profile()?.subscription_tier ?? 'tier1');
+  readonly now = signal(new Date());
+  readonly isOnline = signal(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
-  readonly planAccess = computed(() => {
-    switch (this.currentTier()) {
-      case 'tier2':
-        return {
-          name: 'Professional',
-          badge: 'Live now',
-          badgeClass: 'bg-emerald-100 text-emerald-700',
-          summary: 'Professional gives you stronger day-to-day control for one store with menu management, payments, and deeper operational visibility.',
-          available: [
-            'Saved menu items and faster repeat order entry',
-            'Online payments',
-            'Advanced analytics and staff reporting',
-            'Up to 12 staff accounts',
-          ],
-          locked: [
-            'Multi-location management',
-            'Central branch oversight',
-            'Priority enterprise onboarding',
-          ],
-        };
-      case 'tier4':
-        return {
-          name: 'Essentials',
-          badge: 'Current plan',
-          badgeClass: 'bg-sky-100 text-sky-700',
-          summary: 'Essentials gives smaller menu-based businesses saved menu items and faster repeat ordering without jumping into the heavier Professional plan.',
-          available: [
-            'Saved menu items',
-            'Faster repeat order entry',
-            'Single-store menu workflow',
-            'Everything in Starter',
-          ],
-          locked: [
-            'Online payments',
-            'Advanced analytics',
-            'Multi-location management',
-          ],
-        };
-      case 'tier3':
-        return {
-          name: 'Enterprise',
-          badge: 'Highest live plan',
-          badgeClass: 'bg-primary text-white',
-          summary: 'Enterprise is built for operators scaling across locations and needing stronger branch-level visibility and support.',
-          available: [
-            'Everything in Professional',
-            'Multiple shops and locations',
-            'Centralized management across stores',
-            'Priority support and onboarding',
-          ],
-          locked: ['Dedicated enterprise implementation extras can still be customized per client'],
-        };
-      default:
-        return {
-          name: 'Starter',
-          badge: 'Current plan',
-          badgeClass: 'bg-amber-100 text-amber-700',
-          summary: 'Starter gives you the core live service flow for one location, with clear upgrade paths as the business needs more structure.',
-          available: [
-            'Live order dashboard',
-            'Customer requests and bill calls',
-            'Manual custom-item order entry',
-            'Up to 3 staff accounts',
-          ],
-          locked: [
-            'Saved menu items',
-            'Online payments',
-            'Advanced analytics',
-            'Multi-location management',
-          ],
-        };
-    }
+  readonly liveDayLabel = computed(() => this.dayFormatter.format(this.now()));
+  readonly liveDateLabel = computed(() => this.dateFormatter.format(this.now()));
+  readonly liveTimeLabel = computed(() => this.timeFormatter.format(this.now()));
+  readonly statsWindowOrders = computed(() => {
+    const windowStart = this.now().getTime() - (24 * 60 * 60 * 1000);
+    return this.orders().filter((order) => new Date(order.created_at).getTime() >= windowStart);
   });
-
-  readonly dashboardPlans = computed(() => {
-    const tier = this.currentTier();
-    const rank = this.planRank(tier);
-    return [
-      {
-        id: 'tier1',
-        name: 'Starter',
-        price: 'Free',
-        badge: tier === 'tier1' ? 'Current' : rank > this.planRank('tier1') ? 'Included below you' : 'Available now',
-        state: tier === 'tier1' ? 'current' : rank > this.planRank('tier1') ? 'lower' : 'available',
-        summary: 'For single-location teams that need the basic live service flow.',
-        features: ['1 location', 'Manual custom items', 'Core order and request handling'],
-      },
-      {
-        id: 'tier4',
-        name: 'Essentials',
-        price: 'R259 / month',
-        badge: tier === 'tier4' ? 'Current' : rank > this.planRank('tier4') ? 'Included below you' : 'Available now',
-        state: tier === 'tier4' ? 'current' : rank > this.planRank('tier4') ? 'lower' : 'available',
-        summary: 'For smaller menu-based businesses that need saved items and faster repeat ordering.',
-        features: ['Saved menu items', 'Repeat order speed', 'Single-store workflow'],
-      },
-      {
-        id: 'tier2',
-        name: 'Professional',
-        price: 'R499 / month',
-        badge: tier === 'tier2' ? 'Current' : rank > this.planRank('tier2') ? 'Included below you' : 'Available now',
-        state: tier === 'tier2' ? 'current' : rank > this.planRank('tier2') ? 'lower' : 'available',
-        summary: 'For growing single-store teams that need tighter floor control and reporting.',
-        features: ['Saved menus', 'Payments', 'Advanced analytics'],
-      },
-      {
-        id: 'tier3',
-        name: 'Enterprise',
-        price: 'From R450 / shop / month',
-        badge: tier === 'tier3' ? 'Current' : 'Available now',
-        state: tier === 'tier3' ? 'current' : 'available',
-        summary: 'For operators running multiple branches and needing central oversight.',
-        features: ['Multiple locations', 'Central branch oversight', 'Priority support'],
-      },
-    ] as const;
-  });
-
-  planRank(tier: 'tier1' | 'tier2' | 'tier3' | 'tier4'): number {
-    switch (tier) {
-      case 'tier4':
-        return 1;
-      case 'tier2':
-        return 2;
-      case 'tier3':
-        return 3;
-      default:
-        return 0;
-    }
-  }
 
   readonly filteredOrders = computed(() => {
     const q = this.search().trim().toLowerCase();
@@ -318,17 +158,46 @@ export class DashboardComponent implements OnDestroy {
   readonly alertCount = computed(() => this.orders().filter((o) => o.call_staff || o.request_bill).length);
 
   private readonly pollHandle = this.orderService.pollOrders(() => this.load());
+  private readonly clockHandle = window.setInterval(() => this.now.set(new Date()), 1000);
+  private readonly onlineHandler = () => this.isOnline.set(true);
+  private readonly offlineHandler = () => this.isOnline.set(false);
 
   constructor() {
-    this.load();
+    window.addEventListener('online', this.onlineHandler);
+    window.addEventListener('offline', this.offlineHandler);
+    this.storeService.loadStores().catch(() => undefined);
+    effect(() => {
+      this.storeService.selectedStoreId();
+      this.load();
+    });
   }
 
   inputValue(event: Event): string {
     return (event.target as HTMLInputElement).value;
   }
 
+  selectStore(event: Event): void {
+    this.storeService.setSelectedStore((event.target as HTMLSelectElement).value);
+  }
+
+  tabCount(tab: string): number {
+    const statsOrders = this.statsWindowOrders();
+    switch (tab) {
+      case 'Active':
+        return statsOrders.filter((order) => order.status === 'active').length;
+      case 'Completed':
+        return statsOrders.filter((order) => order.status === 'completed').length;
+      case 'Cancelled':
+        return statsOrders.filter((order) => order.status === 'cancelled').length;
+      case 'All':
+        return statsOrders.length;
+      default:
+        return 0;
+    }
+  }
+
   load(): void {
-    this.orderService.getOrders().subscribe((rows) => this.orders.set(rows));
+    this.orderService.getOrders(undefined, this.storeService.selectedStoreId()).subscribe((rows) => this.orders.set(rows));
   }
 
   complete(id: string): void {
@@ -352,5 +221,8 @@ export class DashboardComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.pollHandle);
+    clearInterval(this.clockHandle);
+    window.removeEventListener('online', this.onlineHandler);
+    window.removeEventListener('offline', this.offlineHandler);
   }
 }

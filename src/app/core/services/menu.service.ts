@@ -9,9 +9,10 @@ export class MenuService {
   private readonly http = inject(HttpClient);
   private readonly api = `${environment.apiUrl}/menu`;
 
-  getMenuItems(orderId?: string): Observable<MenuItem[]> {
+  getMenuItems(orderId?: string, storeId?: string): Observable<MenuItem[]> {
     const params: Record<string, string> = {};
     if (orderId) params['order_id'] = orderId;
+    if (storeId) params['store_id'] = storeId;
     return this.http.get<MenuItem[]>(this.api, { params });
   }
 

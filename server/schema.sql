@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   full_name   VARCHAR(255),
   email       VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role        ENUM('admin','user') NOT NULL DEFAULT 'admin',
+  role        ENUM('admin','manager','supervisor','user') NOT NULL DEFAULT 'admin',
   store_id    VARCHAR(36),
   store_name  VARCHAR(255),
   invite_token VARCHAR(36),
@@ -15,6 +15,21 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_store_id (store_id)
+);
+
+-- Stores
+CREATE TABLE IF NOT EXISTS stores (
+  id              VARCHAR(36) PRIMARY KEY,
+  owner_profile_id VARCHAR(36) NOT NULL,
+  name            VARCHAR(255) NOT NULL,
+  address_line1   VARCHAR(255),
+  city            VARCHAR(120),
+  contact_phone   VARCHAR(50),
+  status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
+  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_owner_profile_id (owner_profile_id),
+  INDEX idx_store_status (status)
 );
 
 -- Orders
@@ -69,9 +84,14 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- Categories
 CREATE TABLE IF NOT EXISTS categories (
   id        VARCHAR(36)  PRIMARY KEY,
-  store_id  VARCHAR(36)  NOT NULL,
+  store_id  VARCHAR(36),
+  owner_profile_id VARCHAR(36),
   name      VARCHAR(100) NOT NULL,
+  is_global BOOLEAN      NOT NULL DEFAULT FALSE,
+  assigned_store_ids JSON,
   created_at TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_store_category (store_id, name),
+  INDEX idx_owner_profile_id (owner_profile_id),
+  INDEX idx_owner_global (owner_profile_id, is_global),
   INDEX idx_store_id (store_id)
 );

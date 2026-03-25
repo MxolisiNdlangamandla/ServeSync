@@ -22,9 +22,11 @@ import { NotificationBellComponent } from '../../shared/components/notification-
               <span class="hidden text-sm font-medium text-slate-600 sm:inline">{{ p.full_name || p.email }}</span>
             }
             <app-notification-bell />
-            <a routerLink="/settings" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Settings">
-              <lucide-angular [img]="settingsIcon" class="h-5 w-5"></lucide-angular>
-            </a>
+            @if (canOpenAdmin()) {
+              <a routerLink="/admin" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Admin">
+                <lucide-angular [img]="settingsIcon" class="h-5 w-5"></lucide-angular>
+              </a>
+            }
             <button class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" (click)="auth.logout()" aria-label="Logout">
               <lucide-angular [img]="logOutIcon" class="h-5 w-5"></lucide-angular>
             </button>
@@ -33,7 +35,7 @@ import { NotificationBellComponent } from '../../shared/components/notification-
       </header>
       <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24"><router-outlet /></main>
       <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white">
-        <div class="mx-auto grid max-w-lg grid-cols-5">
+        <div class="mx-auto grid max-w-lg" [class]="canOpenAdmin() ? 'grid-cols-5' : 'grid-cols-4'">
           @for (item of navItems(); track item.path) {
             <a [routerLink]="item.path" routerLinkActive="!text-accent font-semibold" [routerLinkActiveOptions]="{exact: item.exact}"
                class="flex flex-col items-center gap-0.5 py-2.5 text-[11px] text-slate-400 transition-colors">
@@ -52,12 +54,20 @@ export class StaffLayoutComponent {
   readonly labels = this.industryService.labels;
   readonly logOutIcon = LogOut;
   readonly settingsIcon = Settings;
+  readonly canOpenAdmin = computed(() => ['admin', 'manager', 'supervisor'].includes(this.auth.profile()?.role ?? 'user'));
 
-  readonly navItems = computed(() => [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-    { path: '/overview', label: 'Overview', icon: ChartColumnIncreasing, exact: true },
-    { path: '/orders/new', label: 'New ' + this.labels().order, icon: Plus, exact: true },
-    { path: '/menu', label: 'Menu', icon: UtensilsCrossed, exact: true },
-    { path: '/staff', label: 'Staff', icon: Users, exact: true }
-  ]);
+  readonly navItems = computed(() => {
+    const items = [
+      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+      { path: '/overview', label: 'Overview', icon: ChartColumnIncreasing, exact: true },
+      { path: '/orders/new', label: 'New ' + this.labels().order, icon: Plus, exact: true },
+      { path: '/menu', label: 'Menu', icon: UtensilsCrossed, exact: true },
+    ];
+
+    if (this.canOpenAdmin()) {
+      items.push({ path: '/admin', label: 'Admin', icon: Users, exact: true });
+    }
+
+    return items;
+  });
 }

@@ -248,6 +248,15 @@ Use the status labels below whenever an idea changes state:
 - Kept ServeSync focused on service-provider use cases where live customer-staff coordination matters most.
 - Refined case-study direction away from car-wash examples and toward stronger hotel, lounge, and hospitality use cases.
 - Reduced the case-study bank to one stronger example per industry to avoid repetition and keep the positioning clearer.
+- Reworked the staff-facing dashboard to show live date and time context, service status, rolling 24-hour counts, and enterprise site filtering.
+- Expanded the overview page with date-range filtering and enterprise site-level visibility.
+- Activated enterprise multi-store management tied to the live Enterprise plan, including store billing projections and store-aware filtering across key operational views.
+- Expanded team roles from admin and user to admin, manager, supervisor, and user, with edit and delete protections around the original account owner.
+- Consolidated staff and settings into a single Admin workspace with separate Settings and Admin Team sections.
+- Added enterprise store editing inside Admin and moved plan management to the bottom of the Admin experience.
+- Upgraded category management from a simple single-site/global model to an all-sites-by-default workflow with explicit selected-site assignment support.
+- Added site-aware menu management so enterprise operators can create, edit, and reassign items by branch.
+- Verified the current codebase state with a successful Angular production build, passing backend syntax checks, a healthy `/api/health` response, and a passing automated test run.
 
 ## Case Study Bank
 

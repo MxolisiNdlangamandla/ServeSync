@@ -9,9 +9,10 @@ export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly api = `${environment.apiUrl}/orders`;
 
-  getOrders(status?: string): Observable<Order[]> {
+  getOrders(status?: string, storeId?: string): Observable<Order[]> {
     const params: Record<string, string> = {};
     if (status && status !== 'all') params['status'] = status;
+    if (storeId && storeId !== 'all') params['storeId'] = storeId;
     return this.http.get<Order[]>(this.api, { params });
   }
 

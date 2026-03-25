@@ -137,3 +137,9 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## Upcoming Features
+
+- Client registrations and login for customer-facing accounts.
+- Nearby restaurant discovery so clients can search for and browse restaurants around them.
+- A broader consumer experience layer for finding restaurants before joining the in-store ordering flow.

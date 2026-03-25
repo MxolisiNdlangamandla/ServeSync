@@ -10,10 +10,14 @@ async function auth(req, res, next) {
     const decoded = jwt.verify(header.slice(7), process.env.JWT_SECRET);
     req.user = decoded;
 
-    // Resolve store_id from profile if not in token
-    if (!decoded.store_id) {
-      const [rows] = await pool.query('SELECT store_id FROM profiles WHERE id = ?', [decoded.id]);
-      if (rows.length) req.user.store_id = rows[0].store_id;
+    const [rows] = await pool.query(
+      'SELECT store_id, role, subscription_tier FROM profiles WHERE id = ?',
+      [decoded.id]
+    );
+    if (rows.length) {
+      req.user.store_id = rows[0].store_id;
+      req.user.role = rows[0].role;
+      req.user.subscription_tier = rows[0].subscription_tier;
     }
 
     await pool.query('UPDATE profiles SET is_online = TRUE, last_seen_at = CURRENT_TIMESTAMP WHERE id = ?', [decoded.id]);

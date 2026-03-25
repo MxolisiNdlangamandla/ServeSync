@@ -55,9 +55,21 @@ async function columnExists(targetPool, tableName, columnName) {
   return rows.length > 0;
 }
 
+async function indexExists(targetPool, tableName, indexName) {
+  const dbName = process.env.DB_NAME || 'servesync';
+  const [rows] = await targetPool.query(
+    `SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ? LIMIT 1`,
+    [dbName, tableName, indexName]
+  );
+  return rows.length > 0;
+}
+
 async function ensureLegacyMigrations(targetPool) {
   await targetPool.query(
     "ALTER TABLE profiles MODIFY COLUMN subscription_tier ENUM('tier1','tier2','tier3','tier4') NOT NULL DEFAULT 'tier1'"
+  );
+  await targetPool.query(
+    "ALTER TABLE profiles MODIFY COLUMN role ENUM('admin','manager','supervisor','user') NOT NULL DEFAULT 'admin'"
   );
 
   if (!(await columnExists(targetPool, 'orders', 'completed_at'))) {
@@ -71,6 +83,48 @@ async function ensureLegacyMigrations(targetPool) {
   if (!(await columnExists(targetPool, 'orders', 'review_comment'))) {
     await targetPool.query('ALTER TABLE orders ADD COLUMN review_comment TEXT AFTER review_rating');
   }
+
+  if (!(await columnExists(targetPool, 'categories', 'owner_profile_id'))) {
+    await targetPool.query('ALTER TABLE categories ADD COLUMN owner_profile_id VARCHAR(36) NULL AFTER store_id');
+  }
+
+  if (!(await columnExists(targetPool, 'categories', 'is_global'))) {
+    await targetPool.query('ALTER TABLE categories ADD COLUMN is_global BOOLEAN NOT NULL DEFAULT FALSE AFTER name');
+  }
+
+  if (!(await columnExists(targetPool, 'categories', 'assigned_store_ids'))) {
+    await targetPool.query('ALTER TABLE categories ADD COLUMN assigned_store_ids JSON NULL AFTER is_global');
+  }
+
+  await targetPool.query('ALTER TABLE categories MODIFY COLUMN store_id VARCHAR(36) NULL');
+  if (!(await indexExists(targetPool, 'categories', 'idx_owner_profile_id'))) {
+    await targetPool.query('CREATE INDEX idx_owner_profile_id ON categories (owner_profile_id)');
+  }
+  if (!(await indexExists(targetPool, 'categories', 'idx_owner_global'))) {
+    await targetPool.query('CREATE INDEX idx_owner_global ON categories (owner_profile_id, is_global)');
+  }
+
+  await targetPool.query(
+    `UPDATE categories c
+     JOIN stores s ON s.id = c.store_id
+     SET c.owner_profile_id = s.owner_profile_id
+     WHERE c.owner_profile_id IS NULL`
+  );
+
+  await targetPool.query(
+    `UPDATE categories
+     SET assigned_store_ids = JSON_ARRAY(store_id)
+     WHERE store_id IS NOT NULL
+       AND (assigned_store_ids IS NULL OR JSON_LENGTH(assigned_store_ids) = 0)`
+  );
+
+  await targetPool.query(
+    `INSERT INTO stores (id, owner_profile_id, name)
+     SELECT p.store_id, p.id, COALESCE(NULLIF(p.store_name, ''), 'Primary Store')
+     FROM profiles p
+     LEFT JOIN stores s ON s.id = p.store_id
+     WHERE p.role = 'admin' AND p.store_id IS NOT NULL AND s.id IS NULL`
+  );
 }
 
 async function initDatabase() {

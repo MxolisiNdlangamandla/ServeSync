@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { adminGuard } from './core/guards/admin.guard';
 import { StaffLayoutComponent } from './layout/staff-layout/staff-layout.component';
 
 export const routes: Routes = [
@@ -58,10 +59,17 @@ export const routes: Routes = [
 			},
 			{
 				path: 'staff',
-				loadComponent: () => import('./pages/staff-manager/staff-manager.component').then((m) => m.StaffManagerComponent)
+				pathMatch: 'full',
+				redirectTo: 'admin'
 			},
 			{
 				path: 'settings',
+				pathMatch: 'full',
+				redirectTo: 'admin'
+			},
+			{
+				path: 'admin',
+				canActivate: [adminGuard],
 				loadComponent: () => import('./pages/settings/settings.component').then((m) => m.SettingsComponent)
 			}
 		]
