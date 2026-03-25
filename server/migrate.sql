@@ -16,6 +16,9 @@ CREATE INDEX idx_profiles_store_id ON profiles (store_id);
 -- Backfill: give every existing admin a unique store_id
 UPDATE profiles SET store_id = UUID() WHERE store_id IS NULL AND role = 'admin';
 
+-- Extend subscription tiers to include Essentials without changing existing paid users
+ALTER TABLE profiles MODIFY COLUMN subscription_tier ENUM('tier1','tier2','tier3','tier4') NOT NULL DEFAULT 'tier1';
+
 -- ── orders ────────────────────────────────────────────────────────────
 ALTER TABLE orders ADD COLUMN store_id VARCHAR(36) NOT NULL DEFAULT '' AFTER id;
 ALTER TABLE orders ADD COLUMN customer_name VARCHAR(255) AFTER table_number;

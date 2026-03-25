@@ -124,25 +124,33 @@ export class RegisterComponent {
       id: 'tier1' as SubscriptionTier,
       name: 'Starter',
       price: 'Free',
-      unit: 'custom items only',
-      description: 'Create orders and manage staff without a saved menu.',
-      features: ['Create orders', 'Add staff', 'Use manual custom items']
+      unit: 'start free',
+      description: 'Run the core live service flow for one location.',
+      features: ['Create orders', 'Add staff', 'Use manual custom items', 'Customer requests and bill calls']
+    },
+    {
+      id: 'tier4' as SubscriptionTier,
+      name: 'Essentials',
+      price: 'R259',
+      unit: 'per month',
+      description: 'For smaller menu-based businesses that need saved items and faster repeat ordering.',
+      features: ['Everything in Starter', 'Saved menu items', 'Simple repeat ordering', 'Single-store workflow']
     },
     {
       id: 'tier2' as SubscriptionTier,
       name: 'Professional',
-      price: 'R500',
+      price: 'R499',
       unit: 'per month',
-      description: 'Unlock menu management for one store.',
-      features: ['Everything in Starter', 'Saved menu items', 'Up to 20 menu items']
+      description: 'Unlock menu management, payments, and stronger reporting for one store.',
+      features: ['Everything in Starter', 'Saved menu items', 'Online payments', 'Advanced analytics']
     },
     {
       id: 'tier3' as SubscriptionTier,
       name: 'Enterprise',
-      price: 'R450',
+      price: 'From R450',
       unit: 'per shop / month',
-      description: 'Support multiple shop locations.',
-      features: ['Everything in Professional', 'Multiple shops', 'Scale by location']
+      description: 'Support multiple shop locations with centralized control.',
+      features: ['Everything in Professional', 'Multiple shops', 'Central oversight', 'Priority support']
     }
   ];
 

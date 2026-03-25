@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   is_online   BOOLEAN      NOT NULL DEFAULT FALSE,
   last_seen_at TIMESTAMP NULL DEFAULT NULL,
   industry    VARCHAR(50)  DEFAULT 'restaurant',
-  subscription_tier ENUM('tier1','tier2','tier3') NOT NULL DEFAULT 'tier1',
+  subscription_tier ENUM('tier1','tier2','tier3','tier4') NOT NULL DEFAULT 'tier1',
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_store_id (store_id)

@@ -24,7 +24,8 @@ export const INDUSTRY_OPTIONS: IndustryOption[] = [
   { id: 'restaurant', name: 'Restaurant', icon: '🍽️', enabled: true },
   //{ id: 'barbershop', name: 'Barbershop', icon: '💈', enabled: false },
   //{ id: 'salon', name: 'Hair Salon', icon: '💇', enabled: false },
-  //{ id: 'carwash', name: 'Car Wash', icon: '🚗', enabled: false },
+  // Strong next-fit industries to consider later:
+  //{ id: 'hotel', name: 'Hotel Guest Services', icon: '🏨', enabled: false },
   //{ id: 'lounge', name: 'Lounge / Hospitality', icon: '🍸', enabled: false },
 ];
 

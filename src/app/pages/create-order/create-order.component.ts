@@ -57,7 +57,7 @@ type Step = 'build' | 'done';
           @if (menuLocked()) {
             <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
               <p class="font-semibold">Saved menu items are not available on the Starter plan.</p>
-              <p class="mt-1 text-amber-800">You can still place the order by adding custom items manually below. Upgrade your plan to unlock menu management.</p>
+              <p class="mt-1 text-amber-800">You can still place the order by adding custom items manually below. Upgrade to Essentials, Professional, or Enterprise to unlock menu management.</p>
             </div>
           } @else {
             <div class="relative mb-4">

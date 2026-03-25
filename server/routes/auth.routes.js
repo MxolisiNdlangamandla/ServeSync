@@ -23,7 +23,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const allowedTiers = new Set(['tier1', 'tier2', 'tier3']);
+    const allowedTiers = new Set(['tier1', 'tier2', 'tier3', 'tier4']);
     const tier = allowedTiers.has(subscriptionTier) ? subscriptionTier : 'tier1';
 
     const [existing] = await pool.query('SELECT id FROM profiles WHERE email = ?', [email]);
@@ -135,7 +135,7 @@ router.patch('/profile', auth, async (req, res) => {
     const allowed = ['full_name', 'store_name', 'subscription_tier'];
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
-        if (key === 'subscription_tier' && !['tier1', 'tier2', 'tier3'].includes(req.body[key])) {
+        if (key === 'subscription_tier' && !['tier1', 'tier2', 'tier3', 'tier4'].includes(req.body[key])) {
           return res.status(400).json({ error: 'Invalid subscription tier' });
         }
         fields.push(`${key} = ?`);

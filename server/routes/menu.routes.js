@@ -58,7 +58,7 @@ router.post('/', auth, async (req, res) => {
     if (!storeId) return res.status(403).json({ error: 'No store associated with this account' });
     const tier = await getSubscriptionTier(req.user.id);
     if (tier === 'tier1') {
-      return res.status(403).json({ error: 'Menu management is available on Professional and Enterprise plans' });
+      return res.status(403).json({ error: 'Menu management is available on Essentials, Professional and Enterprise plans' });
     }
 
     const id = uuidv4();
@@ -79,7 +79,7 @@ router.patch('/:id', auth, async (req, res) => {
   try {
     const tier = await getSubscriptionTier(req.user.id);
     if (tier === 'tier1') {
-      return res.status(403).json({ error: 'Menu management is available on Professional and Enterprise plans' });
+      return res.status(403).json({ error: 'Menu management is available on Essentials, Professional and Enterprise plans' });
     }
 
     const fields = [];
@@ -107,7 +107,7 @@ router.delete('/:id', auth, async (req, res) => {
   try {
     const tier = await getSubscriptionTier(req.user.id);
     if (tier === 'tier1') {
-      return res.status(403).json({ error: 'Menu management is available on Professional and Enterprise plans' });
+      return res.status(403).json({ error: 'Menu management is available on Essentials, Professional and Enterprise plans' });
     }
 
     const storeId = req.user.store_id;

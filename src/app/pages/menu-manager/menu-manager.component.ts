@@ -40,7 +40,7 @@ interface CategoryRecord {
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 class="text-sm font-bold text-amber-900">Menu management is not available on your current plan</h2>
-              <p class="mt-1 text-sm text-amber-800">You are on the Starter plan. Upgrade to Professional or Enterprise to add saved menu items. You can still create orders using manual custom items.</p>
+              <p class="mt-1 text-sm text-amber-800">You are on the Starter plan. Upgrade to Essentials, Professional, or Enterprise to add saved menu items. You can still create orders using manual custom items.</p>
             </div>
             <a routerLink="/settings" class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90">
               Upgrade Plan
@@ -233,7 +233,7 @@ export class MenuManagerComponent {
 
   create(): void {
     if (this.menuLocked()) {
-      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      toast.error('Upgrade to Essentials, Professional, or Enterprise to manage menu items');
       return;
     }
 
@@ -247,7 +247,7 @@ export class MenuManagerComponent {
 
   toggle(item: MenuItem, event: Event): void {
     if (this.menuLocked()) {
-      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      toast.error('Upgrade to Essentials, Professional, or Enterprise to manage menu items');
       return;
     }
 
@@ -257,7 +257,7 @@ export class MenuManagerComponent {
 
   edit(item: MenuItem): void {
     if (this.menuLocked()) {
-      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      toast.error('Upgrade to Essentials, Professional, or Enterprise to manage menu items');
       return;
     }
 
@@ -273,7 +273,7 @@ export class MenuManagerComponent {
   saveEdit(): void {
     if (!this.editingId()) return;
     if (this.menuLocked()) {
-      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      toast.error('Upgrade to Essentials, Professional, or Enterprise to manage menu items');
       return;
     }
 
@@ -286,7 +286,7 @@ export class MenuManagerComponent {
 
   remove(id: string): void {
     if (this.menuLocked()) {
-      toast.error('Upgrade to Professional or Enterprise to manage menu items');
+      toast.error('Upgrade to Essentials, Professional, or Enterprise to manage menu items');
       return;
     }
 

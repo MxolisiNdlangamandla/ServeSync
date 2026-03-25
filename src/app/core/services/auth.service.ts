@@ -77,7 +77,7 @@ export class AuthService {
     return firstValueFrom(this.http.post<{ inviteToken?: string }>(`${this.api}/staff/invite`, { email, role, full_name: fullName }));
   }
 
-  async updateProfile(data: { full_name?: string; store_name?: string; subscription_tier?: 'tier1' | 'tier2' | 'tier3' }): Promise<void> {
+  async updateProfile(data: { full_name?: string; store_name?: string; subscription_tier?: 'tier1' | 'tier2' | 'tier3' | 'tier4' }): Promise<void> {
     const profile = await firstValueFrom(this.http.patch<Profile>(`${this.api}/auth/profile`, data));
     this.profileState.set(profile);
   }

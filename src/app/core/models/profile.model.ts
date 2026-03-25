@@ -1,5 +1,5 @@
 export type UserRole = 'admin' | 'user';
-export type SubscriptionTier = 'tier1' | 'tier2' | 'tier3';
+export type SubscriptionTier = 'tier1' | 'tier2' | 'tier3' | 'tier4';
 
 export interface Profile {
   id: string;

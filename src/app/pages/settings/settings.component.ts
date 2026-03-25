@@ -40,7 +40,7 @@ interface Category {
         </div>
 
         @if (showPlans()) {
-          <div class="mt-5 grid gap-3 lg:grid-cols-3">
+          <div class="mt-5 grid gap-3 lg:grid-cols-4">
             @for (plan of plans; track plan.id) {
               <button type="button"
                 class="rounded-xl border p-4 text-left transition-colors"
@@ -158,20 +158,26 @@ export class SettingsComponent implements OnInit {
     {
       id: 'tier1',
       name: 'Starter',
-      price: 'R299 / month',
-      description: 'Create orders with manual custom items only.'
+      price: 'Free',
+      description: 'Core live service flow for one location with manual custom items.'
+    },
+    {
+      id: 'tier4',
+      name: 'Essentials',
+      price: 'R259 / month',
+      description: 'Saved menu items and faster repeat ordering for smaller menu-based businesses.'
     },
     {
       id: 'tier2',
       name: 'Professional',
-      price: 'R699 / month',
-      description: 'Unlock saved menu items and faster order entry for one store.'
+      price: 'R499 / month',
+      description: 'Unlock saved menu items, payments, and stronger reporting for one store.'
     },
     {
       id: 'tier3',
       name: 'Enterprise',
-      price: 'R1,499 / month',
-      description: 'Advanced menu management and multi-location scale.'
+      price: 'From R450 / shop / month',
+      description: 'Add multi-location oversight, centralized management, and priority support.'
     }
   ];
 
@@ -186,6 +192,8 @@ export class SettingsComponent implements OnInit {
 
   currentPlanLabel(): string {
     switch (this.auth.profile()?.subscription_tier) {
+      case 'tier4':
+        return 'Essentials';
       case 'tier2':
         return 'Professional';
       case 'tier3':
@@ -197,17 +205,21 @@ export class SettingsComponent implements OnInit {
 
   currentPlanDescription(): string {
     switch (this.auth.profile()?.subscription_tier) {
+      case 'tier4':
+        return 'Saved menu items and faster repeat ordering enabled';
       case 'tier2':
-        return 'Saved menu items enabled for one store';
+        return 'Menu management, payments, and advanced reporting enabled';
       case 'tier3':
-        return 'Multi-location menu management enabled';
+        return 'Multi-location oversight and enterprise support enabled';
       default:
-        return 'Manual custom items only';
+        return 'Core live service flow with manual custom items';
     }
   }
 
   currentPlanBadgeClass(): string {
     switch (this.auth.profile()?.subscription_tier) {
+      case 'tier4':
+        return 'bg-sky-100 text-sky-700';
       case 'tier2':
         return 'bg-emerald-100 text-emerald-700';
       case 'tier3':

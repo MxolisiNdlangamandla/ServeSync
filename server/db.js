@@ -56,6 +56,10 @@ async function columnExists(targetPool, tableName, columnName) {
 }
 
 async function ensureLegacyMigrations(targetPool) {
+  await targetPool.query(
+    "ALTER TABLE profiles MODIFY COLUMN subscription_tier ENUM('tier1','tier2','tier3','tier4') NOT NULL DEFAULT 'tier1'"
+  );
+
   if (!(await columnExists(targetPool, 'orders', 'completed_at'))) {
     await targetPool.query('ALTER TABLE orders ADD COLUMN completed_at TIMESTAMP NULL DEFAULT NULL AFTER status');
   }

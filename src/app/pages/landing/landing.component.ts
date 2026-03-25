@@ -150,7 +150,7 @@ import { RouterLink } from '@angular/router';
           <h3 class="mb-3 text-center text-3xl font-black text-primary">Simple, Transparent Pricing</h3>
           <p class="text-center text-slate-500 md:text-lg">Choose the plan that fits your business today.</p>
           <p class="mb-10 mt-3 text-center text-sm font-medium uppercase tracking-[0.18em] text-slate-400 md:text-base md:tracking-[0.22em]">Upgrade for more staff, better insight, and stronger multi-location control.</p>
-          <div class="grid gap-6 md:grid-cols-3">
+          <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             @for (plan of plans; track plan.name) {
               <div class="relative flex flex-col rounded-[1.75rem] border-2 p-7 shadow-[0_22px_55px_-38px_rgba(15,23,42,0.38)] transition-transform duration-200"
                 [class]="plan.popular ? 'border-accent bg-gradient-to-b from-orange-50 to-white md:-translate-y-3' : 'border-slate-200 bg-white'">
@@ -263,17 +263,26 @@ export class LandingComponent {
     // Strongest next verticals for ServeSync:
     // { name: 'Barbershop', icon: '💈', enabled: false },
     // { name: 'Hair Salon', icon: '💇', enabled: false },
-    // { name: 'Car Wash', icon: '🚗', enabled: false },
     // { name: 'Lounge / VIP', icon: '🍸', enabled: false },
     // Good later expansions:
-    // { name: 'Hotel Room Service', icon: '🏨', enabled: false },
+    // { name: 'Hotel Guest Services', icon: '🏨', enabled: false },
+    // { name: 'Wine Estate Tasting Room', icon: '🍷', enabled: false },
     // { name: 'Clinic Waiting Room', icon: '🏥', enabled: false },
     // { name: 'Gaming Lounge / Internet Cafe', icon: '🎮', enabled: false },
     // { name: 'Repair Service Centre', icon: '🛠️', enabled: false },
     // { name: 'Food Court / Fast Casual', icon: '🍽️', enabled: false },
   ];
 
-  readonly plans = [
+  readonly plans: ReadonlyArray<{
+    name: string;
+    tagline: string;
+    priceLabel: string;
+    unit: string;
+    popular: boolean;
+    cta: string;
+    features: string[];
+    excluded: string[];
+  }> = [
     {
       name: 'Starter',
       tagline: 'A clean starting point for a single venue getting organized.',
@@ -286,11 +295,32 @@ export class LandingComponent {
         'Up to 3 staff accounts',
         'Live order dashboard',
         'Customer requests and bill calls',
-        'Core setup for daily service',
+        'Manual custom-item order entry',
       ],
       excluded: [
+        'Saved menu items',
         'Accept online payments',
         'Advanced analytics',
+        'Multi-location management',
+      ],
+    },
+    {
+      name: 'Essentials',
+      tagline: 'For smaller menu-based businesses that need more than free without jumping into full Professional.',
+      priceLabel: 'R259',
+      unit: '/month',
+      popular: false,
+      cta: 'Start Essentials',
+      features: [
+        '1 store / location',
+        'Basic saved menu support',
+        'Simple combos and line items',
+        'Faster repeat order entry',
+        'Lightweight business reporting',
+      ],
+      excluded: [
+        'Advanced analytics',
+        'Multi-location management',
         'Priority support',
       ],
     },
@@ -317,7 +347,7 @@ export class LandingComponent {
     {
       name: 'Enterprise',
       tagline: 'For operators running multiple shops and more complex service teams.',
-      priceLabel: 'R450',
+      priceLabel: 'From R450',
       unit: '/shop/month',
       popular: false,
       cta: 'Contact Sales',
@@ -329,30 +359,37 @@ export class LandingComponent {
         'Custom branding',
         'Dedicated onboarding',
       ],
-      excluded: [] as string[],
+      excluded: [],
     },
   ];
 
   readonly proofStories = [
     {
       tier: 'Starter',
-      business: 'Neighbourhood cafe',
+      business: 'Rosebank Corner Cafe',
       quote: 'We stopped shouting across the floor just to keep lunch service moving.',
       summary: 'A small team brought order tracking, bill calls, and live table requests into one clear flow without adding unnecessary process.',
       result: 'Clearer handoffs for a lean team',
     },
     {
+      tier: 'Essentials',
+      business: 'QuickPlate Kitchen',
+      quote: 'The menu stayed simple, but saved items finally made repeat orders fast enough for a small team.',
+      summary: 'Essentials fits smaller menu-driven businesses that need saved items and repeat ordering without jumping into the heavier Professional plan.',
+      result: 'Stronger menu flow for small operators',
+    },
+    {
       tier: 'Professional',
-      business: 'Busy grill house',
+      business: 'Durban Grill Room',
       quote: 'Once the floor got busier, we needed better visibility into who was handling what and where service was slipping.',
-      summary: 'The team gained stronger reporting, payment handling, and clearer oversight during a full dinner shift with fewer blind spots.',
+      summary: 'The team gained stronger reporting, clearer oversight, and a more manageable service flow during busy periods.',
       result: 'More control during peak service',
     },
     {
       tier: 'Enterprise',
-      business: 'Multi-branch brand',
-      quote: 'The biggest win was finally running multiple branches without every location becoming its own island.',
-      summary: 'The business gained stronger branch coordination, faster support, and better central oversight as more locations came online.',
+      business: 'Atlantic Crest Hotels',
+      quote: 'The biggest win was finally running multiple properties without every location becoming its own island.',
+      summary: 'The group gained stronger property coordination, faster support, and better central oversight as more locations came online.',
       result: 'Stronger oversight across locations',
     },
   ];
