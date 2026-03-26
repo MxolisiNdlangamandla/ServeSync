@@ -2,6 +2,7 @@ require('dotenv').config({ path: __dirname + '/.env' });
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const db = require('./db');
 
 const authRoutes = require('./routes/auth.routes');
@@ -27,6 +28,10 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/stores', storesRoutes);
 
+// Serve Angular production build
+const distPath = path.join(__dirname, '..', 'dist', 'servesync', 'browser');
+app.use(express.static(distPath));
+
 // Health check
 app.get('/api/health', async (_req, res) => {
   try {
@@ -35,6 +40,14 @@ app.get('/api/health', async (_req, res) => {
   } catch (error) {
     res.status(500).json({ status: 'error', database: 'disconnected' });
   }
+});
+
+// SPA fallback — any non-API route serves index.html
+app.get('*', (req, res) => {
+  const index = path.join(distPath, 'index.html');
+  res.sendFile(index, (err) => {
+    if (err) res.status(404).send('Not found');
+  });
 });
 
 db.initDatabase()

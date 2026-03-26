@@ -62,6 +62,7 @@ export class AuthService {
       localStorage.setItem('servesync-token', res.token);
       this.profileState.set(res.user);
       this.loggedIn.set(true);
+      await this.router.navigateByUrl(this.dashboardRouteFor(res.user));
     }
   }
 
@@ -71,8 +72,16 @@ export class AuthService {
       localStorage.setItem('servesync-token', res.token);
       this.profileState.set(res.user);
       this.loggedIn.set(true);
-      await this.router.navigateByUrl('/dashboard');
+      await this.router.navigateByUrl(this.dashboardRouteFor(res.user));
     }
+  }
+
+  private dashboardRouteFor(profile: Profile): string {
+    if (['admin', 'manager'].includes(profile.role)) {
+      return '/overview';
+    }
+
+    return '/dashboard';
   }
 
   async inviteStaff(email: string, role: string = 'user', fullName?: string, storeId?: string): Promise<{ inviteToken?: string }> {

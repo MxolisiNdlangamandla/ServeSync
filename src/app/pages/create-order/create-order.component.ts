@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { QrCodeComponent } from 'ng-qrcode';
 import { toast } from 'ngx-sonner';
@@ -32,6 +32,12 @@ type Step = 'build' | 'done';
             @case ('done') { Share QR code with the customer }
           }
         </p>
+        @if (copiedFromOrderId() && step() === 'build') {
+          <div class="mt-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">Draft Mode</p>
+            <p class="mt-1 text-sm text-slate-700">Copied from completed order <span class="font-mono text-xs text-slate-600">{{ copiedFromOrderId() }}</span>. Edit items and details, then create a new order.</p>
+          </div>
+        }
       </div>
 
       <!-- ───── STEP 1: BUILD ───── -->
@@ -171,6 +177,7 @@ type Step = 'build' | 'done';
 })
 export class CreateOrderComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
   private readonly orderService = inject(OrderService);
   private readonly menuService = inject(MenuService);
   private readonly notificationService = inject(NotificationService);
@@ -194,6 +201,7 @@ export class CreateOrderComponent {
   readonly submitting = signal(false);
   readonly createdOrderId = signal('');
   readonly createdToken = signal('');
+  readonly copiedFromOrderId = signal('');
 
   readonly metaForm = this.fb.nonNullable.group({
     tableNumber: ['', Validators.required],
@@ -216,6 +224,42 @@ export class CreateOrderComponent {
 
   constructor() {
     this.menuService.getMenuItems().subscribe((rows) => this.menu.set(rows));
+    this.prefillFromCopiedOrder();
+  }
+
+  private prefillFromCopiedOrder(): void {
+    const sourceOrderId = this.route.snapshot.queryParamMap.get('copyFrom');
+    if (!sourceOrderId) {
+      return;
+    }
+
+    this.copiedFromOrderId.set(sourceOrderId);
+
+    this.orderService.getOrder(sourceOrderId).subscribe({
+      next: (sourceOrder) => {
+        if (!sourceOrder) {
+          toast.error('Unable to load copied order');
+          return;
+        }
+
+        const copiedItems = sourceOrder.items.map((item) => ({
+          name: item.name,
+          price: Number(item.price),
+          quantity: Number(item.quantity)
+        }));
+
+        this.cart.set(copiedItems);
+        this.metaForm.patchValue({
+          tableNumber: sourceOrder.table_number,
+          customerName: sourceOrder.customer_name ?? ''
+        });
+        this.tableNumber.set(sourceOrder.table_number);
+        toast.success('Copied order loaded as a new draft');
+      },
+      error: () => {
+        toast.error('Unable to load copied order');
+      }
+    });
   }
 
   onTableNumberInput(event: Event): void {

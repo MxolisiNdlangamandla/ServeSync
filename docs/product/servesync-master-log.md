@@ -258,6 +258,16 @@ Use the status labels below whenever an idea changes state:
 - Added site-aware menu management so enterprise operators can create, edit, and reassign items by branch.
 - Verified the current codebase state with a successful Angular production build, passing backend syntax checks, a healthy `/api/health` response, and a passing automated test run.
 
+### 2026-03-26
+
+- Finalized Tier 2 menu policy in the live product: Create Menu is available, Add Item is hidden, and Tier 2 is capped at 6 saved menus.
+- Added backend enforcement for the Tier 2 6-menu cap in menu creation APIs so limits cannot be bypassed from direct requests.
+- Updated the menu creation UX for Enterprise to support multi-site assignment with checkbox selection, defaulting to all sites selected and allowing selective assignment per site.
+- Shifted completed-order repeat flow to copy-as-new-draft instead of reopening historical completed orders, preserving completed-order reporting integrity.
+- Added completed-order payment capture (cash/card) and service reviews (rating and optional comment), including backend validation and schema support for payment method.
+- Standardized completed-state copy in order views (including Copy Order and Completed labels) and improved order card identification by showing short order number next to table number.
+- Centralized post-login and post-register routing by role in auth flow so admin and manager users land on the operational overview, while other roles land on dashboard.
+
 ## Case Study Bank
 
 These can be used in the site, pitch material, and future product pages.

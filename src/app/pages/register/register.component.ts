@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AbstractControl, ReactiveFormsModule, FormBuilder, ValidationErrors, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { toast } from 'ngx-sonner';
 import { AuthService } from '../../core/services/auth.service';
@@ -113,7 +113,6 @@ function passwordMatch(control: AbstractControl): ValidationErrors | null {
 export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
 
   readonly loading = signal(false);
   readonly industries = INDUSTRY_OPTIONS;
@@ -180,8 +179,7 @@ export class RegisterComponent {
         industry: this.selectedIndustry(),
         subscriptionTier: this.selectedTier()
       });
-      toast.success('Account created! Redirecting to dashboard...');
-      await this.router.navigateByUrl('/dashboard');
+      toast.success('Account created! Redirecting...');
     } catch (err: any) {
       toast.error(err.error?.error ?? err.message ?? 'Registration failed');
     } finally {

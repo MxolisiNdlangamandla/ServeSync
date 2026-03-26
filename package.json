@@ -8,7 +8,9 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "server": "node server/index.js",
-    "dev": "concurrently \"ng serve\" \"node server/index.js\""
+    "dev": "concurrently \"ng serve\" \"node server/index.js\"",
+    "build:prod": "ng build --configuration production",
+    "start:prod": "node server/index.js"
   },
   "private": true,
   "packageManager": "npm@11.9.0",

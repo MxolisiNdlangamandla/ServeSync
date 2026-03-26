@@ -130,6 +130,14 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
               <lucide-angular [img]="xIcon" class="mr-1.5 inline-block h-4 w-4"></lucide-angular> Cancel
             </button>
           </div>
+        } @else if (order()!.status === 'completed') {
+          <div class="flex gap-3">
+            <a class="flex-1 rounded-full bg-primary px-4 py-3 text-center font-bold text-white hover:bg-primary/90"
+               routerLink="/orders/new"
+               [queryParams]="{ copyFrom: order()!.id }">
+              Copy Order
+            </a>
+          </div>
         }
       </section>
     } @else {
@@ -190,7 +198,7 @@ export class OrderDetailComponent {
   readonly statusLabel = () => {
     const s = this.order()?.status;
     if (s === 'active') return 'Open';
-    if (s === 'completed') return 'Concluded';
+    if (s === 'completed') return 'Completed';
     return 'Cancelled';
   };
 
@@ -291,4 +299,5 @@ export class OrderDetailComponent {
       toast.error(message);
     }
   }
+
 }

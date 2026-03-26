@@ -80,6 +80,10 @@ async function ensureLegacyMigrations(targetPool) {
     await targetPool.query('ALTER TABLE orders ADD COLUMN review_rating TINYINT NULL AFTER payment_status');
   }
 
+  if (!(await columnExists(targetPool, 'orders', 'payment_method'))) {
+    await targetPool.query("ALTER TABLE orders ADD COLUMN payment_method ENUM('cash','card') NULL AFTER payment_status");
+  }
+
   if (!(await columnExists(targetPool, 'orders', 'review_comment'))) {
     await targetPool.query('ALTER TABLE orders ADD COLUMN review_comment TEXT AFTER review_rating');
   }

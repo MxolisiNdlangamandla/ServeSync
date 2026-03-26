@@ -1,5 +1,6 @@
 export type OrderStatus = 'active' | 'completed' | 'cancelled';
 export type PaymentStatus = 'unpaid' | 'pending' | 'paid';
+export type PaymentMethod = 'cash' | 'card';
 
 export interface OrderItem {
   name: string;
@@ -18,6 +19,7 @@ export interface Order {
   call_staff: boolean;
   request_bill: boolean;
   payment_status: PaymentStatus;
+  payment_method: PaymentMethod | null;
   review_rating: number | null;
   review_comment: string | null;
   notes: string | null;

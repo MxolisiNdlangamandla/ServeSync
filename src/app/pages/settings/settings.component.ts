@@ -29,45 +29,24 @@ type AdminTab = 'settings' | 'team';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6">
-      <section class="rounded-2xl border border-slate-200 bg-white p-5">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Admin Workspace</p>
-            <h1 class="mt-2 text-3xl font-black text-primary">Settings and Team Controls</h1>
-            <p class="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              Open business settings, enterprise store controls, and team access from one place without losing the original settings workflow.
-            </p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <button type="button"
-                class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
-                [class]="activeTab() === 'settings' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                (click)="activeTab.set('settings')">
-                <lucide-angular [img]="settingsIcon" class="h-4 w-4"></lucide-angular>
-                Settings
-              </button>
-              <button type="button"
-                class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
-                [class]="activeTab() === 'team' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                (click)="activeTab.set('team')">
-                <lucide-angular [img]="usersIcon" class="h-4 w-4"></lucide-angular>
-                Admin Team
-              </button>
-            </div>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 lg:min-w-[280px]">
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Admin Focus</p>
-            <div class="mt-3 flex items-center justify-between gap-3">
-              <div>
-                <p class="text-xl font-black text-primary">{{ activeTab() === 'settings' ? 'Business Settings' : 'Admin Team' }}</p>
-                <p class="mt-1 text-sm text-slate-500">{{ activeTab() === 'settings' ? 'Profile, stores, categories, and package controls.' : 'Roles, invites, and team access management.' }}</p>
-              </div>
-              <span class="rounded-full px-3 py-1 text-xs font-bold" [class]="currentPlanBadgeClass()">
-                Live
-              </span>
-            </div>
-          </div>
+      @if (canSeeTeamTab()) {
+        <div class="flex flex-wrap gap-2">
+          <button type="button"
+            class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+            [class]="activeTab() === 'settings' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+            (click)="activeTab.set('settings')">
+            <lucide-angular [img]="settingsIcon" class="h-4 w-4"></lucide-angular>
+            Settings
+          </button>
+          <button type="button"
+            class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+            [class]="activeTab() === 'team' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+            (click)="activeTab.set('team')">
+            <lucide-angular [img]="usersIcon" class="h-4 w-4"></lucide-angular>
+            Admin Team
+          </button>
         </div>
-      </section>
+      }
 
       @if (activeTab() === 'settings') {
         <section class="rounded-xl border border-slate-200 bg-white p-5">
@@ -245,25 +224,28 @@ type AdminTab = 'settings' | 'team';
           </section>
         }
 
+        @if (currentTier() === 'tier3' || currentTier() === 'tier4') {
         <section class="rounded-xl border border-slate-200 bg-white p-5">
           <h2 class="mb-4 text-lg font-semibold text-slate-800">Menu Categories</h2>
-          <p class="mb-4 text-sm text-slate-500">New categories default to all sites. Switch to selected sites only when you need a category limited to specific locations.</p>
+          <p class="mb-4 text-sm text-slate-500">{{ canManageGlobalCategories() ? 'New categories default to all sites. Switch to selected sites only when you need a category limited to specific locations.' : 'Create categories for your current setup. Upgrade to Enterprise for multi-site category assignment.' }}</p>
           <form [formGroup]="categoryForm" (ngSubmit)="addCategory()" class="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <div class="grid gap-3 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+            <div class="grid gap-3" [class]="canManageGlobalCategories() ? 'lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]' : 'grid-cols-1'">
               <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Category Name</label>
                 <input class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm placeholder:text-slate-400 focus:border-accent focus:outline-none" formControlName="name" placeholder="e.g. Drinks" />
               </div>
-              <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Assigned Site</label>
-                <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-accent focus:outline-none" formControlName="assignmentMode" (change)="syncCategoryDefaults()">
-                  <option value="all">All sites</option>
-                  <option value="selected">Selected sites</option>
-                </select>
-              </div>
+              @if (canManageGlobalCategories()) {
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-slate-700">Assigned Site</label>
+                  <select class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-accent focus:outline-none" formControlName="assignmentMode" (change)="syncCategoryDefaults()">
+                    <option value="all">All sites</option>
+                    <option value="selected">Selected sites</option>
+                  </select>
+                </div>
+              }
             </div>
 
-            @if (categoryForm.controls.assignmentMode.value === 'selected') {
+            @if (canManageGlobalCategories() && categoryForm.controls.assignmentMode.value === 'selected') {
               <div class="rounded-xl border border-slate-200 bg-white p-4">
                 <div class="mb-3 flex items-center gap-2">
                   <lucide-angular [img]="buildingIcon" class="h-4 w-4 text-primary"></lucide-angular>
@@ -314,6 +296,7 @@ type AdminTab = 'settings' | 'team';
             <p class="mt-4 text-sm text-slate-400">No categories yet. Add one above.</p>
           }
         </section>
+        }
       } @else {
         <section class="rounded-xl border border-slate-200 bg-white p-5">
           <app-staff-manager />
@@ -349,6 +332,7 @@ type AdminTab = 'settings' | 'team';
                 <div class="flex items-start justify-between gap-3">
                   <div>
                     <p class="text-sm font-bold text-primary">{{ plan.name }}</p>
+                    <p class="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ tierLabel(plan.id) }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ plan.price }}</p>
                   </div>
                   @if (currentPlanId() === plan.id) {
@@ -375,12 +359,13 @@ type AdminTab = 'settings' | 'team';
           </div>
         }
 
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1.85fr)]">
+        <div class="grid gap-4">
           <article class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <p class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Current Plan</p>
                 <h3 class="mt-2 text-2xl font-black text-primary">{{ planAccess().name }}</h3>
+                <p class="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{{ tierLabel(currentPlanId()) }}</p>
               </div>
               <span class="rounded-full px-3 py-1 text-xs font-bold" [class]="planAccess().badgeClass">
                 {{ planAccess().badge }}
@@ -512,6 +497,7 @@ export class SettingsComponent implements OnInit {
   readonly usersIcon = Users;
   readonly buildingIcon = Building2;
   readonly currentTier = computed(() => this.auth.profile()?.subscription_tier ?? 'tier1');
+  readonly canSeeTeamTab = computed(() => ['tier3', 'tier4'].includes(this.currentTier()));
   readonly canManageStores = this.storeService.canManageStores;
   readonly stores = this.storeService.stores;
   readonly enterpriseBilling = this.storeService.billing;
@@ -540,13 +526,13 @@ export class SettingsComponent implements OnInit {
       description: 'Core live service flow for one location with manual custom items.'
     },
     {
-      id: 'tier3',
+      id: 'tier2',
       name: 'Essentials',
       price: 'R259 / month',
       description: 'Saved menu items and faster repeat ordering for smaller menu-based businesses.'
     },
     {
-      id: 'tier2',
+      id: 'tier3',
       name: 'Professional',
       price: 'R499 / month',
       description: 'Unlock saved menu items, payments, and stronger reporting for one store.'
@@ -591,24 +577,6 @@ export class SettingsComponent implements OnInit {
     switch (this.currentTier()) {
       case 'tier2':
         return {
-          name: 'Professional',
-          badge: 'Live now',
-          badgeClass: 'bg-emerald-100 text-emerald-700',
-          summary: 'Professional gives you stronger day-to-day control for one store with menu management, payments, and deeper operational visibility.',
-          available: [
-            'Saved menu items and faster repeat order entry',
-            'Online payments',
-            'Advanced analytics and staff reporting',
-            'Up to 12 staff accounts',
-          ],
-          locked: [
-            'Multi-location management',
-            'Central branch oversight',
-            'Priority enterprise onboarding',
-          ],
-        };
-      case 'tier3':
-        return {
           name: 'Essentials',
           badge: 'Current plan',
           badgeClass: 'bg-sky-100 text-sky-700',
@@ -623,6 +591,24 @@ export class SettingsComponent implements OnInit {
             'Online payments',
             'Advanced analytics',
             'Multi-location management',
+          ],
+        };
+      case 'tier3':
+        return {
+          name: 'Professional',
+          badge: 'Live now',
+          badgeClass: 'bg-emerald-100 text-emerald-700',
+          summary: 'Professional gives you stronger day-to-day control for one store with menu management, payments, and deeper operational visibility.',
+          available: [
+            'Saved menu items and faster repeat order entry',
+            'Online payments',
+            'Advanced analytics and staff reporting',
+            'Up to 12 staff accounts',
+          ],
+          locked: [
+            'Multi-location management',
+            'Central branch oversight',
+            'Priority enterprise onboarding',
           ],
         };
       case 'tier4':
@@ -663,14 +649,14 @@ export class SettingsComponent implements OnInit {
 
   readonly planHighlights = computed(() => {
     switch (this.currentTier()) {
-      case 'tier3':
+      case 'tier2':
         return [
           { label: 'Locations', value: '1 store', note: 'Built for a single location getting more structured.' },
           { label: 'Menu Workflow', value: 'Saved items', note: 'Menu items can be reused to speed up repeat orders.' },
           { label: 'Payments', value: 'Not included', note: 'Keep service flow clean before moving to payment features.' },
           { label: 'Reporting', value: 'Basic visibility', note: 'You can see floor flow without the deeper analytics tools.' },
         ];
-      case 'tier2':
+      case 'tier3':
         return [
           { label: 'Locations', value: '1 store', note: 'Optimized for a growing single-site operation.' },
           { label: 'Menu Workflow', value: 'Full menu', note: 'Saved items and faster repeat ordering for the floor team.' },
@@ -708,20 +694,20 @@ export class SettingsComponent implements OnInit {
         features: ['1 location', 'Manual custom items', 'Core order and request handling'],
       },
       {
-        id: 'tier3',
+        id: 'tier2',
         name: 'Essentials',
         price: 'R259 / month',
-        badge: tier === 'tier3' ? 'Current' : rank > this.planRank('tier3') ? 'Included below you' : 'Available now',
-        state: tier === 'tier3' ? 'current' : rank > this.planRank('tier3') ? 'lower' : 'available',
+        badge: tier === 'tier2' ? 'Current' : rank > this.planRank('tier2') ? 'Included below you' : 'Available now',
+        state: tier === 'tier2' ? 'current' : rank > this.planRank('tier2') ? 'lower' : 'available',
         summary: 'For smaller menu-based businesses that need saved items and faster repeat ordering.',
         features: ['Saved menu items', 'Repeat order speed', 'Single-store workflow'],
       },
       {
-        id: 'tier2',
+        id: 'tier3',
         name: 'Professional',
         price: 'R499 / month',
-        badge: tier === 'tier2' ? 'Current' : rank > this.planRank('tier2') ? 'Included below you' : 'Available now',
-        state: tier === 'tier2' ? 'current' : rank > this.planRank('tier2') ? 'lower' : 'available',
+        badge: tier === 'tier3' ? 'Current' : rank > this.planRank('tier3') ? 'Included below you' : 'Available now',
+        state: tier === 'tier3' ? 'current' : rank > this.planRank('tier3') ? 'lower' : 'available',
         summary: 'For growing single-store teams that need tighter floor control and reporting.',
         features: ['Saved menus', 'Payments', 'Advanced analytics'],
       },
@@ -743,9 +729,9 @@ export class SettingsComponent implements OnInit {
 
   currentPlanLabel(): string {
     switch (this.auth.profile()?.subscription_tier) {
-      case 'tier3':
-        return 'Essentials';
       case 'tier2':
+        return 'Essentials';
+      case 'tier3':
         return 'Professional';
       case 'tier4':
         return 'Enterprise';
@@ -756,9 +742,9 @@ export class SettingsComponent implements OnInit {
 
   currentPlanDescription(): string {
     switch (this.auth.profile()?.subscription_tier) {
-      case 'tier3':
-        return 'Saved menu items and faster repeat ordering enabled';
       case 'tier2':
+        return 'Saved menu items and faster repeat ordering enabled';
+      case 'tier3':
         return 'Menu management, payments, and advanced reporting enabled';
       case 'tier4':
         return 'Multi-location oversight and enterprise support enabled';
@@ -769,9 +755,9 @@ export class SettingsComponent implements OnInit {
 
   currentPlanBadgeClass(): string {
     switch (this.auth.profile()?.subscription_tier) {
-      case 'tier3':
-        return 'bg-sky-100 text-sky-700';
       case 'tier2':
+        return 'bg-sky-100 text-sky-700';
+      case 'tier3':
         return 'bg-emerald-100 text-emerald-700';
       case 'tier4':
         return 'bg-primary/10 text-primary';
@@ -782,9 +768,9 @@ export class SettingsComponent implements OnInit {
 
   planRank(tier: SubscriptionTier): number {
     switch (tier) {
-      case 'tier3':
-        return 1;
       case 'tier2':
+        return 1;
+      case 'tier3':
         return 2;
       case 'tier4':
         return 3;
@@ -793,11 +779,29 @@ export class SettingsComponent implements OnInit {
     }
   }
 
+  tierLabel(tier: SubscriptionTier): string {
+    switch (tier) {
+      case 'tier1':
+        return 'Tier 1';
+      case 'tier2':
+        return 'Tier 2';
+      case 'tier3':
+        return 'Tier 3';
+      case 'tier4':
+        return 'Tier 4';
+      default:
+        return 'Tier 1';
+    }
+  }
+
   ngOnInit(): void {
     const p = this.auth.profile();
     if (p) {
       this.profileForm.patchValue({ fullName: p.full_name || '', storeName: p.store_name || '' });
       this.selectedPlan.set(p.subscription_tier);
+      if (!this.canSeeTeamTab()) {
+        this.activeTab.set('settings');
+      }
     }
     this.syncCategoryDefaults();
     this.loadCategories();
@@ -891,6 +895,12 @@ export class SettingsComponent implements OnInit {
   }
 
   syncCategoryDefaults(): void {
+    if (!this.canManageGlobalCategories()) {
+      this.categoryForm.controls.assignmentMode.setValue('all');
+      this.selectedCategoryStoreIds.set([]);
+      return;
+    }
+
     if (this.categoryForm.controls.assignmentMode.value === 'all') {
       this.selectedCategoryStoreIds.set([]);
       return;
@@ -910,13 +920,14 @@ export class SettingsComponent implements OnInit {
 
   async addCategory(): Promise<void> {
     const { name, assignmentMode } = this.categoryForm.getRawValue();
+    const effectiveAssignmentMode = this.canManageGlobalCategories() ? assignmentMode : 'all';
     if (!name.trim()) return;
 
     try {
       const payload = {
         name: name.trim(),
-        isGlobal: assignmentMode === 'all',
-        assignedStoreIds: assignmentMode === 'selected' ? this.selectedCategoryStoreIds() : undefined,
+        isGlobal: effectiveAssignmentMode === 'all',
+        assignedStoreIds: effectiveAssignmentMode === 'selected' ? this.selectedCategoryStoreIds() : undefined,
       };
       await firstValueFrom(this.http.post<Category>(`${this.api}/categories`, payload));
       this.categoryForm.reset({ name: '', assignmentMode: 'all' });

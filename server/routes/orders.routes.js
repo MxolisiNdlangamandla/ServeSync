@@ -156,7 +156,7 @@ router.patch('/:id', async (req, res) => {
 
     // Customer can only update a restricted subset of fields. Status changes via
     // access token are limited to closing an active order from the customer flow.
-    const staffAllowed = ['status', 'call_staff', 'request_bill', 'payment_status', 'items', 'notes', 'customer_name', 'review_rating', 'review_comment'];
+    const staffAllowed = ['status', 'call_staff', 'request_bill', 'payment_status', 'payment_method', 'items', 'notes', 'customer_name', 'review_rating', 'review_comment'];
     const customerAllowed = ['call_staff', 'request_bill', 'items', 'payment_status', 'review_rating', 'review_comment'];
     const allowed = isStaff ? [...staffAllowed] : [...customerAllowed];
 
@@ -171,6 +171,12 @@ router.patch('/:id', async (req, res) => {
       const rating = Number(req.body.review_rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
         return res.status(400).json({ error: 'Review rating must be between 1 and 5' });
+      }
+    }
+
+    if (req.body.payment_method !== undefined && req.body.payment_method !== null) {
+      if (!['cash', 'card'].includes(req.body.payment_method)) {
+        return res.status(400).json({ error: 'Invalid payment method' });
       }
     }
 

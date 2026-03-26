@@ -88,7 +88,7 @@ import { toast } from 'ngx-sonner';
 
       <div class="space-y-4">
         @for (order of filteredOrders(); track order.id) {
-          <app-order-card [order]="order" (completeOrder)="complete($event)" />
+          <app-order-card [order]="order" (completeOrder)="complete($event)" (markPaid)="markPaid($event)" (saveReview)="saveReview($event)" />
         }
         @if (filteredOrders().length === 0) {
           <div class="rounded-xl border border-dashed border-slate-300 p-16 text-center">
@@ -215,6 +215,26 @@ export class DashboardComponent implements OnDestroy {
       this.load();
     }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : 'Failed to complete order';
+      toast.error(message);
+    });
+  }
+
+  markPaid(event: { id: string; method: 'cash' | 'card' }): void {
+    this.orderService.updateOrder(event.id, { payment_status: 'paid', payment_method: event.method }).then(() => {
+      toast.success(`Payment recorded as ${event.method}`);
+      this.load();
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to record payment';
+      toast.error(message);
+    });
+  }
+
+  saveReview(event: { id: string; rating: number; comment: string | null }): void {
+    this.orderService.updateOrder(event.id, { review_rating: event.rating, review_comment: event.comment }).then(() => {
+      toast.success('Service review saved');
+      this.load();
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to save review';
       toast.error(message);
     });
   }

@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS orders (
   call_staff    BOOLEAN      NOT NULL DEFAULT FALSE,
   request_bill  BOOLEAN      NOT NULL DEFAULT FALSE,
   payment_status ENUM('unpaid','pending','paid') NOT NULL DEFAULT 'unpaid',
+  payment_method ENUM('cash','card') NULL,
   review_rating TINYINT      NULL,
   review_comment TEXT,
   notes         TEXT,

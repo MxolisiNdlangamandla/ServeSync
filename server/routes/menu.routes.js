@@ -132,6 +132,20 @@ router.post('/', auth, async (req, res) => {
       return res.status(403).json({ error: 'Menu management is available on Essentials, Professional and Enterprise plans' });
     }
 
+    if (tier === 'tier2') {
+      const normalizedCategory = String(category || '').trim().toLowerCase();
+      if (normalizedCategory === 'menu') {
+        const [countRows] = await pool.query(
+          'SELECT COUNT(*) AS count FROM menu_items WHERE store_id = ? AND LOWER(category) = ?',
+          [storeId, 'menu']
+        );
+        const existingCount = Number(countRows[0]?.count ?? 0);
+        if (existingCount >= 6) {
+          return res.status(403).json({ error: 'Tier 2 allows up to 6 saved menus' });
+        }
+      }
+    }
+
     const id = uuidv4();
     await pool.query(
       'INSERT INTO menu_items (id, store_id, name, price, category, description) VALUES (?, ?, ?, ?, ?, ?)',
