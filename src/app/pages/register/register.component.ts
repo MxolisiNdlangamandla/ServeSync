@@ -128,7 +128,7 @@ export class RegisterComponent {
       features: ['Create orders', 'Add staff', 'Use manual custom items', 'Customer requests and bill calls']
     },
     {
-      id: 'tier3' as SubscriptionTier,
+      id: 'tier2' as SubscriptionTier,
       name: 'Essentials',
       price: 'R259',
       unit: 'per month',
@@ -136,7 +136,7 @@ export class RegisterComponent {
       features: ['Everything in Starter', 'Saved menu items', 'Simple repeat ordering', 'Single-store workflow']
     },
     {
-      id: 'tier2' as SubscriptionTier,
+      id: 'tier3' as SubscriptionTier,
       name: 'Professional',
       price: 'R499',
       unit: 'per month',
@@ -181,7 +181,12 @@ export class RegisterComponent {
       });
       toast.success('Account created! Redirecting...');
     } catch (err: any) {
-      toast.error(err.error?.error ?? err.message ?? 'Registration failed');
+      const backendMessage =
+        err?.error?.error ??
+        err?.error?.message ??
+        (typeof err?.error === 'string' ? err.error : '');
+      const httpStatus = err?.status ? ` (HTTP ${err.status})` : '';
+      toast.error(backendMessage || err?.message || `Registration failed${httpStatus}`);
     } finally {
       this.loading.set(false);
     }

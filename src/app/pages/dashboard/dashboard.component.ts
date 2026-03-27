@@ -112,7 +112,12 @@ export class DashboardComponent implements OnDestroy {
   private readonly storeService = inject(StoreService);
   private readonly dayFormatter = new Intl.DateTimeFormat('en-ZA', { weekday: 'long' });
   private readonly dateFormatter = new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' });
-  private readonly timeFormatter = new Intl.DateTimeFormat('en-ZA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  private readonly timeFormatter = new Intl.DateTimeFormat('en-ZA', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
 
   readonly plusIcon = Plus;
   readonly searchIcon = Search;
@@ -129,7 +134,17 @@ export class DashboardComponent implements OnDestroy {
 
   readonly liveDayLabel = computed(() => this.dayFormatter.format(this.now()));
   readonly liveDateLabel = computed(() => this.dateFormatter.format(this.now()));
-  readonly liveTimeLabel = computed(() => this.timeFormatter.format(this.now()));
+  readonly liveTimeLabel = computed(() => {
+    const formatted = this.timeFormatter.formatToParts(this.now()).map((part) => {
+      if (part.type === 'dayPeriod') {
+        return part.value.toLowerCase();
+      }
+
+      return part.value;
+    }).join('');
+
+    return formatted.replace(/\s+/g, ' ').trim();
+  });
   readonly statsWindowOrders = computed(() => {
     const windowStart = this.now().getTime() - (24 * 60 * 60 * 1000);
     return this.orders().filter((order) => new Date(order.created_at).getTime() >= windowStart);

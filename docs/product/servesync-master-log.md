@@ -258,6 +258,19 @@ Use the status labels below whenever an idea changes state:
 - Added site-aware menu management so enterprise operators can create, edit, and reassign items by branch.
 - Verified the current codebase state with a successful Angular production build, passing backend syntax checks, a healthy `/api/health` response, and a passing automated test run.
 
+### 2026-03-27
+
+- Completed first successful Afrihost cPanel Node.js deployment. Backend files uploaded to api/server folder, npm install ran successfully, and /api/health returned a healthy connected response.
+- Corrected cPanel Application root from stale local machine path to the correct server-relative path api/server with index.js as startup file.
+- Added all required environment variables in cPanel Node.js app settings: JWT_SECRET, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_SSL, DB_SSL_REJECT_UNAUTHORIZED.
+- Clarified that DB_PORT (3306) and PORT (auto-injected by Passenger) are different variables and PORT should not be set manually on Afrihost.
+- Fixed registration error toast to always show a readable message including HTTP status fallback, replacing a silent red icon with no text.
+- Updated dashboard live time formatter to display am/pm in lowercase using formatToParts (for example: 9:41:06 am).
+- Changed plan ladder badge text from Included below you to Included for clarity across all tier cards in settings.
+- Fixed plan ID mapping in register form: Essentials now correctly maps to tier2 and Professional to tier3, correcting a previous swap that assigned new users to the wrong tier.
+- Angular production build verified clean with no errors ahead of deployment.
+- Frontend build output at dist/servesync/browser ready for upload to public_html on Afrihost.
+
 ### 2026-03-26
 
 - Finalized Tier 2 menu policy in the live product: Create Menu is available, Add Item is hidden, and Tier 2 is capped at 6 saved menus.
