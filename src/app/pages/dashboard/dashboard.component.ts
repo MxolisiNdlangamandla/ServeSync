@@ -115,7 +115,6 @@ export class DashboardComponent implements OnDestroy {
   private readonly timeFormatter = new Intl.DateTimeFormat('en-ZA', {
     hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit',
     hour12: true
   });
 
@@ -137,7 +136,7 @@ export class DashboardComponent implements OnDestroy {
   readonly liveTimeLabel = computed(() => {
     const formatted = this.timeFormatter.formatToParts(this.now()).map((part) => {
       if (part.type === 'dayPeriod') {
-        return part.value.toLowerCase();
+        return part.value.toUpperCase();
       }
 
       return part.value;
